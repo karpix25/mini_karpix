@@ -31,8 +31,28 @@ app.add_middleware(
 )
 
 # --- Модели данных (Pydantic) ---
-class UserRank(BaseModel): name: str; min_points: int
-class UserData(BaseModel): id: int; first_name: Optional[str] = None; username: Optional[str] = None; points: int; rank: str
+class UserRank(BaseModel):
+    name: str
+    min_points: int
+
+class UserData(BaseModel):
+    id: int
+    first_name: Optional[str] = None
+    username: Optional[str] = None
+    points: int
+    rank: str
+    # --- Новые поля ---
+    next_rank_name: Optional[str] = None
+    points_to_next_rank: Optional[int] = None
+    progress_percentage: int
+
+class RankInfo(BaseModel):
+    level: int
+    name: str
+    min_points: int
+    is_unlocked: bool
+
+# ... остальные модели (ArticleInfo, LeaderboardUser) остаются без изменений
 class ArticleInfo(BaseModel): id: str; title: str; rank_required: int
 class ArticleContent(BaseModel): id: str; content: str
 class LeaderboardUser(BaseModel): first_name: Optional[str] = None; username: Optional[str] = None; points: int
