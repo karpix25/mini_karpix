@@ -84,10 +84,23 @@ def validate_init_data(init_data: str, bot_token: str) -> Optional[dict]:
         if h.hexdigest() == parsed_data["hash"]: return json.loads(unquote(parsed_data.get("user", "{}")))
     except Exception: return None
 
-async def get_current_user(x_init_data: str = Header(None)):
-    if not x_init_data: raise HTTPException(status_code=401, detail="X-Init-Data header is missing")
-    user_data = validate_init_data(x_init_data, BOT_TOKEN)
-    if not user_data: raise HTTPException(status_code=401, detail="Invalid InitData")
+# ЭТО НОВАЯ, ИСПРАВЛЕННАЯ ВЕРСИЯ
+async def get_current_user(authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+    
+    # Проверяем, что используется правильная схема 'tma'
+    try:
+        scheme, init_data = authorization.split()
+        if scheme.lower() != 'tma':
+            raise ValueError("Invalid scheme")
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid authorization scheme. Expected 'tma <init_data>'")
+
+    # Валидируем сами данные, как и раньше
+    user_data = validate_init_data(init_data, BOT_TOKEN)
+    if not user_data:
+        raise HTTPException(status_code=401, detail="Invalid InitData")
     return user_data
 
 # --- Эндпоинты API ---
