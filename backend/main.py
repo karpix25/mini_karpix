@@ -4,22 +4,49 @@ import hashlib
 import json
 from urllib.parse import unquote, parse_qsl
 from fastapi import FastAPI, Depends, HTTPException, Header
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import psycopg2
 from typing import List, Optional
 
+# --- НОВЫЙ ИМПОРТ ---
+from fastapi.middleware.cors import CORSMiddleware
+
+# --- Настройки ---
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 CONTENT_DIR = "/app/content"
+
 app = FastAPI()
 
+# --- НОВЫЙ БЛОК ДЛЯ НАСТРОЙКИ CORS ---
+# Указываем, с каких доменов можно делать запросы к нашему API
+origins = [
+    "https://n8n-karpix-miniapp-karpix.g44y6r.easypanel.host", # URL вашего фронтенда
+    "http://localhost:3000", # Для локальной разработки, если понадобится
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"], # Разрешаем все методы (GET, POST и т.д.)
+    allow_headers=["*"], # Разрешаем все заголовки
+)
+# --- КОНЕЦ НОВОГО БЛОКА ---
+
+
+# ... остальной код main.py остается без изменений ...
+# ... (class UserRank, class UserData, и все ваши эндпоинты @app.get)
+
+# --- Модели данных ---
 class UserRank(BaseModel): name: str; min_points: int
 class UserData(BaseModel): id: int; first_name: Optional[str] = None; username: Optional[str] = None; points: int; rank: str
 class ArticleInfo(BaseModel): id: str; title: str; rank_required: int
 class ArticleContent(BaseModel): id: str; content: str
 class LeaderboardUser(BaseModel): first_name: Optional[str] = None; username: Optional[str] = None; points: int; rank: str
 
+# --- Логика Рангов ---
 RANKS = [UserRank(name="Новичок", min_points=0), UserRank(name="Активный участник", min_points=51), UserRank(name="Ветеран", min_points=201), UserRank(name="Легенда", min_points=501)]
 def get_rank(points: int) -> str:
     current_rank = RANKS[0].name
@@ -28,6 +55,7 @@ def get_rank(points: int) -> str:
         else: break
     return current_rank
 
+# --- Утилиты ---
 def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL)
     try: yield conn
@@ -47,6 +75,8 @@ async def get_current_user(x_init_data: str = Header(...)):
     if not user_data: raise HTTPException(status_code=401, detail="Invalid InitData")
     return user_data
 
+# --- Эндпоинты API ---
+
 @app.get("/api/me", response_model=UserData)
 async def get_me(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
     user_id = user.get("id")
@@ -65,7 +95,7 @@ async def get_leaderboard(db=Depends(get_db_connection)):
     leaders = [LeaderboardUser(first_name=r[0], username=r[1], points=(r[2] or 0) * 2, rank=get_rank((r[2] or 0) * 2)) for r in cur.fetchall()]
     cur.close()
     return leaders
-
+    
 @app.get("/api/content/{article_id}", response_model=ArticleContent)
 async def get_article(article_id: str):
     filepath = os.path.join(CONTENT_DIR, f"{article_id}.md")
