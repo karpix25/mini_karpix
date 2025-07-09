@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import './Leaderboard.css'; // Мы создадим этот файл со стилями
+import './Leaderboard.css'; // Убедитесь, что этот файл существует и содержит стили
 
 // Маленький компонент для отображения бейджа с рангом
-// Он сам решит, показывать цветной кружок или просто номер
 const RankBadge = ({ rank }) => {
     const isTopThree = rank <= 3;
     if (!isTopThree) {
@@ -14,9 +13,7 @@ const RankBadge = ({ rank }) => {
 
 // Компонент для одной строки в списке лидеров
 const UserRow = ({ user, period }) => {
-    // Форматируем очки: добавляем "+" для периодов 7d/30d
     const scoreFormatted = period !== 'all' && user.score > 0 ? `+${user.score}` : user.score;
-    // Используем placeholder для аватара, если его нет
     const avatarUrl = user.avatar_url || `https://api.dicebear.com/8.x/pixel-art/svg?seed=${user.username || user.user_id}`;
 
     return (
@@ -38,12 +35,10 @@ function Leaderboard() {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        // Эта функция будет вызываться каждый раз при смене 'period'
         const fetchLeaders = async () => {
             setLoading(true);
             setError(null);
             
-            // Проверяем, что мы внутри Telegram Web App
             if (!window.Telegram || !window.Telegram.WebApp || !window.Telegram.WebApp.initData) {
                 setError("Не удалось получить данные Telegram. Пожалуйста, откройте приложение в Telegram.");
                 setLoading(false);
@@ -51,12 +46,15 @@ function Leaderboard() {
             }
 
             try {
-                // Создаем заголовок с данными для авторизации
+                // === ИСПРАВЛЕНИЕ ЗДЕСЬ ===
+                // Меняем 'Authorization' на 'X-Init-Data' и убираем префикс 'tma'
                 const headers = {
-                    'Authorization': `tma ${window.Telegram.WebApp.initData}`
+                    'X-Init-Data': window.Telegram.WebApp.initData
                 };
+                // =========================
 
                 // Запрашиваем данные для выбранного периода
+                // Важно: URL теперь относительный, т.к. EasyPanel проксирует запросы
                 const response = await fetch(`/api/leaderboard?period=${period}`, { headers });
                 
                 if (!response.ok) {
@@ -75,7 +73,11 @@ function Leaderboard() {
         };
 
         fetchLeaders();
-    }, [period]); // зависимость от 'period'
+    }, [period]); 
+
+    // Находим данные текущего пользователя из общего списка для отображения в блоке "Your Rank"
+    const currentUserForDisplay = data.top_users.find(u => data.current_user && u.user_id === data.current_user.user_id);
+    const currentUserRankData = data.current_user ? { ...currentUserForDisplay, ...data.current_user } : null;
 
     return (
         <div className="leaderboard-container">
@@ -101,11 +103,11 @@ function Leaderboard() {
                 )}
             </div>
 
-            {!loading && !error && data.current_user && (
+            {/* Блок "Your rank" теперь рендерится правильно */}
+            {!loading && !error && currentUserRankData && (
                 <div className="your-rank-card">
                     <h3 className="your-rank-title">Your rank</h3>
-                    {/* Переиспользуем тот же компонент UserRow для текущего юзера */}
-                    <UserRow user={{...data.top_users.find(u => u.user_id === data.current_user.user_id), ...data.current_user}} period={period} />
+                    <UserRow user={currentUserRankData} period={period} />
                 </div>
             )}
         </div>
