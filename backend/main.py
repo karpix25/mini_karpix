@@ -27,8 +27,8 @@ app.add_middleware(
         "http://localhost:3000"     # Для локальной разработки
     ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"], # Разрешаем ВСЕ методы (GET, POST, и важный для нас OPTIONS)
+    allow_headers=["*"], # Разрешаем ВСЕ заголовки (включая X-Init-Data)
 )
 
 # --- Модели данных ---
@@ -67,32 +67,24 @@ def validate_init_data(init_data: str, bot_token: str) -> Optional[dict]:
         if h.hexdigest() == parsed_data["hash"]: return json.loads(unquote(parsed_data.get("user", "{}")))
     except Exception: return None
 
-# --- ИСПРАВЛЕННАЯ функция авторизации ---
-async def get_current_user(authorization: str = Header(None)):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization header is missing")
-    try:
-        scheme, init_data = authorization.split()
-        if scheme.lower() != 'tma': raise ValueError("Invalid scheme")
-    except ValueError:
-        raise HTTPException(status_code=401, detail="Invalid authorization scheme")
-    
-    user_data = validate_init_data(init_data, BOT_TOKEN)
-    if not user_data:
-        raise HTTPException(status_code=401, detail="Invalid InitData")
+# --- ВАША СТАРАЯ, РАБОЧАЯ ФУНКЦИЯ АВТОРИЗАЦИИ ---
+# Мы возвращаемся к ней, чтобы ничего не сломать
+async def get_current_user(x_init_data: str = Header(None)):
+    if not x_init_data: raise HTTPException(status_code=401, detail="X-Init-Data header is missing")
+    user_data = validate_init_data(x_init_data, BOT_TOKEN)
+    if not user_data: raise HTTPException(status_code=401, detail="Invalid InitData")
     return user_data
 
 # --- Эндпоинты API, которые у вас уже РАБОТАЛИ ---
 
 @app.get("/api/me", response_model=UserData)
 async def get_me(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
-    # Эта функция остается такой, какой была в вашей рабочей версии
     user_id = user.get("id")
     cur = db.cursor()
     cur.execute("SELECT first_name, username, message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
     db_user = cur.fetchone()
     cur.close()
-    points = (db_user['message_count'] * 2) if db_user else 0
+    points = (db_user['message_count'] * 2) if db_user and db_user.get('message_count') else 0
     current_rank_name = get_rank(points)
     current_rank_info = next((r for r in RANKS if r.name == current_rank_name), RANKS[0])
     current_rank_index = RANKS.index(current_rank_info)
@@ -106,9 +98,9 @@ async def get_me(user: dict = Depends(get_current_user), db=Depends(get_db_conne
     
     return UserData(id=user_id, first_name=(db_user['first_name'] if db_user else user.get("first_name")), username=(db_user['username'] if db_user else user.get("username")), points=points, rank=current_rank_info.name, next_rank_name=(next_rank_info.name if next_rank_info else "Max"), points_to_next_rank=points_to_next_rank, progress_percentage=progress_percentage)
 
-# Ваш старый рабочий лидерборд, который мы не трогаем
 @app.get("/api/leaderboard", response_model=List[LeaderboardUser])
 async def get_leaderboard(db=Depends(get_db_connection)):
+    # Этот эндпоинт не использует авторизацию, поэтому он не ломался
     cur = db.cursor()
     cur.execute("SELECT first_name, username, message_count FROM channel_subscribers WHERE is_active = TRUE ORDER BY message_count DESC LIMIT 20")
     leaders = [LeaderboardUser(first_name=r['first_name'], username=r['username'], points=(r['message_count'] or 0) * 2) for r in cur.fetchall()]
@@ -117,12 +109,11 @@ async def get_leaderboard(db=Depends(get_db_connection)):
 
 @app.get("/api/content", response_model=List[ArticleInfo])
 async def get_content_list(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
-    # Эта функция остается такой, какой была в вашей рабочей версии
     user_id = user.get("id")
     cur = db.cursor()
     cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
     db_user = cur.fetchone()
-    points = (db_user['message_count'] * 2) if db_user else 0
+    points = (db_user['message_count'] * 2) if db_user and db_user.get('message_count') else 0
     user_rank_name = get_rank(points)
     user_rank_level = next((i + 1 for i, r in enumerate(RANKS) if r.name == user_rank_name), 1)
     available_articles = []
@@ -138,12 +129,11 @@ async def get_content_list(user: dict = Depends(get_current_user), db=Depends(ge
 
 @app.get("/api/content/{article_id}", response_model=ArticleContent)
 async def get_article(article_id: str, user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
-    # Эта функция остается такой, какой была в вашей рабочей версии
     user_id = user.get("id")
     cur = db.cursor()
     cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
     db_user = cur.fetchone()
-    points = (db_user['message_count'] * 2) if db_user else 0
+    points = (db_user['message_count'] * 2) if db_user and db_user.get('message_count') else 0
     user_rank_level = next((i + 1 for i, r in enumerate(RANKS) if r.name == get_rank(points)), 1)
     found_files = glob.glob(os.path.join(CONTENT_DIR, f"*__{article_id}.md"))
     if not found_files: raise HTTPException(status_code=404, detail="Article not found")
@@ -155,12 +145,11 @@ async def get_article(article_id: str, user: dict = Depends(get_current_user), d
 
 @app.get("/api/ranks", response_model=List[RankInfo])
 async def get_all_ranks(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
-    # Эта функция остается такой, какой была в вашей рабочей версии
     user_id = user.get("id")
     cur = db.cursor()
     cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
     db_user = cur.fetchone()
-    points = (db_user['message_count'] * 2) if db_user else 0
+    points = (db_user['message_count'] * 2) if db_user and db_user.get('message_count') else 0
     return [RankInfo(level=i + 1, name=r.name, min_points=r.min_points, is_unlocked=(points >= r.min_points)) for i, r in enumerate(RANKS)]
 
 # ЗДЕСЬ МЫ БЕЗОПАСНО ДОБАВЛЯЕМ НОВЫЙ ЛИДЕРБОРД, НЕ ТРОГАЯ СТАРЫЙ
@@ -172,7 +161,7 @@ class LeaderboardResponseV2(BaseModel): top_users: List[LeaderboardUserV2]; curr
 @app.get("/api/v2/leaderboard", response_model=LeaderboardResponseV2, tags=["V2"])
 async def get_leaderboard_v2(
     period: Literal['7d', '30d', 'all'] = '7d',
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user), # Используем вашу РАБОЧУЮ авторизацию!
     db=Depends(get_db_connection)
 ):
     current_user_id = user.get("id")
