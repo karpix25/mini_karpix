@@ -19,16 +19,12 @@ CONTENT_DIR = "/app/content"
 app = FastAPI()
 
 # --- Настройка CORS ---
-origins = [
-    "https://n8n-karpix-miniapp-karpix.g44y6r.easypanel.host",
-    "http://localhost:3000",
-]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"], # Разрешаем ВСЕ домены (просто и надежно для начала)
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"], # Разрешаем ВСЕ методы (GET, POST, и важный для нас OPTIONS)
+    allow_headers=["*"], # Разрешаем ВСЕ заголовки (включая Authorization)
 )
 
 # --- Существующие модели данных ---
