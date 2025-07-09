@@ -52,7 +52,7 @@ function Leaderboard() {
                 };
                 // ================================================================
 
-                const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/leaderboard?period=${period}`, { headers });
+                const response = await fetch(`https://miniback.karpix.com/api/leaderboard?period=${period}`, { headers });
                 
                 if (!response.ok) {
                     const errorData = await response.json();
