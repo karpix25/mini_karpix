@@ -1,85 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
 import './App.css';
-import Leaderboard from './Leaderboard'; // Импортируем наш новый компонент
-import Content from './Content';       // Импортируем наш второй новый компонент
-
-const tg = window.Telegram?.WebApp;
-const BACKEND_URL = "https://n8n-karpix-miniapp-karpix-backeng.g44y6r.easypanel.host";
-
-function Profile({ userData }) {
-  if (!userData) {
-    return <div>Загрузка профиля...</div>;
-  }
-  return (
-    <div>
-      <h1>Привет, {userData.first_name || userData.username}!</h1>
-      <p>Твой ранг: <strong>{userData.rank}</strong></p>
-      <p>У тебя <strong>{userData.points}</strong> баллов.</p>
-    </div>
-  );
-}
+import Leaderboard from './Leaderboard';
+import Content from './Content';
+import ArticleReader from './ArticleReader';
+import Profile from './Profile'; // Мы создадим этот файл
 
 function App() {
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'leaderboard', 'content'
-  const [userData, setUserData] = useState(null);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (tg) {
-      tg.ready();
-    }
-    
-    const fetchUserData = async () => {
-      if (!tg?.initData) {
-        setError("Это приложение предназначено для работы внутри Telegram.");
-        return;
-      }
-      try {
-        const response = await fetch(`${BACKEND_URL}/api/me`, {
-          headers: { 'X-Init-Data': tg.initData },
-        });
-        if (!response.ok) throw new Error("Ошибка сети при загрузке профиля");
-        const data = await response.json();
-        setUserData(data);
-      } catch (err) {
-        setError(err.message);
-      }
-    };
-    fetchUserData();
-  }, []);
-
-  const renderContent = () => {
-    if (error) return <div><strong>Ошибка:</strong><p>{error}</p></div>;
-
-    switch (activeTab) {
-      case 'profile':
-        return <Profile userData={userData} />;
-      case 'leaderboard':
-        return <Leaderboard />;
-      case 'content':
-        return <Content />;
-      default:
-        return <Profile userData={userData} />;
-    }
-  };
-
   return (
-    <div className="App">
-      <div className="content">
-        {renderContent()}
+    <Router>
+      <div className="App">
+        <div className="content">
+          <Routes>
+            <Route path="/" element={<Profile />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/content" element={<Content />} />
+            <Route path="/article/:articleId" element={<ArticleReader />} />
+          </Routes>
+        </div>
+        
+        <Routes>
+            <Route path="/article/:articleId" element={null} />
+            <Route path="*" element={
+                <div className="nav-tabs">
+                    <NavLink to="/" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
+                        Профиль
+                    </NavLink>
+                    <NavLink to="/leaderboard" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
+                        Лидеры
+                    </NavLink>
+                    <NavLink to="/content" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
+                        Контент
+                    </NavLink>
+                </div>
+            } />
+        </Routes>
       </div>
-      <div className="nav-tabs">
-        <div className={`nav-tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
-          Профиль
-        </div>
-        <div className={`nav-tab ${activeTab === 'leaderboard' ? 'active' : ''}`} onClick={() => setActiveTab('leaderboard')}>
-          Лидеры
-        </div>
-        <div className={`nav-tab ${activeTab === 'content' ? 'active' : ''}`} onClick={() => setActiveTab('content')}>
-          Контент
-        </div>
-      </div>
-    </div>
+    </Router>
   );
 }
 
