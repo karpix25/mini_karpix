@@ -4,8 +4,8 @@ import './App.css';
 // Получаем объект Telegram Web App
 const tg = window.Telegram.WebApp;
 
-// ВАЖНО: Замените этот URL на реальный URL вашего БЭКЕНДА, который выдал EasyPanel
-const BACKEND_URL = "https://ВАШ-БЭКЕНД-URL.easypanel.host";
+// URL вашего бэкенда. Убедитесь, что нет лишних слэшей в конце.
+const BACKEND_URL = "https://n8n-karpix-miniapp-karpix-backeng.g44y6r.easypanel.host"; 
 
 function App() {
   const [userData, setUserData] = useState(null);
@@ -14,13 +14,18 @@ function App() {
 
   useEffect(() => {
     // Сообщаем Telegram, что приложение готово
-    tg.ready();
+    if (tg.ready) {
+        tg.ready();
+    }
     
     const fetchUserData = async () => {
       try {
         // Проверяем, есть ли initData
         if (!tg.initData) {
-          throw new Error("Telegram initData не найдена. Откройте приложение через Telegram.");
+          // Это для отладки в обычном браузере, а не в Telegram
+          setError("Это приложение должно быть открыто внутри Telegram.");
+          setLoading(false);
+          return;
         }
 
         const response = await fetch(`${BACKEND_URL}/api/me`, {
@@ -33,7 +38,7 @@ function App() {
 
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(`Ошибка сети: ${response.status} ${errorText}`);
+          throw new Error(`Ошибка от сервера: ${response.status} ${errorText}`);
         }
 
         const data = await response.json();
@@ -42,7 +47,9 @@ function App() {
       } catch (err) {
         setError(err.message);
         // Для отладки можно выводить ошибку на главный экран
-        tg.showAlert(err.message);
+        if (tg.showAlert) {
+            tg.showAlert(err.message);
+        }
       } finally {
         setLoading(false);
       }
@@ -69,7 +76,7 @@ function App() {
             <p>У тебя <strong>{userData.points}</strong> баллов.</p>
           </div>
         ) : (
-          <p>Не удалось загрузить данные.</p>
+          <p>Не удалось загрузить данные. Убедитесь, что вы в Telegram.</p>
         )}
       </header>
     </div>
