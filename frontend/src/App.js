@@ -1,22 +1,76 @@
-import logo from './logo.svg';
+import React, { useEffect, useState } from 'react';
 import './App.css';
 
+// Получаем объект Telegram Web App
+const tg = window.Telegram.WebApp;
+
+// ВАЖНО: Замените этот URL на реальный URL вашего БЭКЕНДА, который выдал EasyPanel
+const BACKEND_URL = "https://ВАШ-БЭКЕНД-URL.easypanel.host";
+
 function App() {
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    // Сообщаем Telegram, что приложение готово
+    tg.ready();
+    
+    const fetchUserData = async () => {
+      try {
+        // Проверяем, есть ли initData
+        if (!tg.initData) {
+          throw new Error("Telegram initData не найдена. Откройте приложение через Telegram.");
+        }
+
+        const response = await fetch(`${BACKEND_URL}/api/me`, {
+          method: 'GET',
+          headers: {
+            // Отправляем initData в заголовке для авторизации на бэкенде
+            'X-Init-Data': tg.initData,
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Ошибка сети: ${response.status} ${errorText}`);
+        }
+
+        const data = await response.json();
+        setUserData(data);
+
+      } catch (err) {
+        setError(err.message);
+        // Для отладки можно выводить ошибку на главный экран
+        tg.showAlert(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  if (loading) {
+    return <div className="App-header">Загрузка данных пользователя...</div>;
+  }
+
+  if (error) {
+    return <div className="App-header">Ошибка: {error}</div>;
+  }
+
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+        {userData ? (
+          <div>
+            <h1>Привет, {userData.first_name || userData.username}!</h1>
+            <p>Твой ранг: <strong>{userData.rank}</strong></p>
+            <p>У тебя <strong>{userData.points}</strong> баллов.</p>
+          </div>
+        ) : (
+          <p>Не удалось загрузить данные.</p>
+        )}
       </header>
     </div>
   );
