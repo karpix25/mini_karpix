@@ -207,33 +207,55 @@ async def get_me(user: dict = Depends(get_current_user), db=Depends(get_db_conne
 @app.get("/api/content", response_model=List[ArticleInfo])
 async def get_content_list(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
     user_id = user.get("id")
+    print(f"DEBUG: User ID: {user_id}")
+    
     cur = db.cursor()
     cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
     db_user = cur.fetchone()
     cur.close()
+    
     points = (db_user['message_count'] * 2) if db_user and db_user['message_count'] is not None else 0
+    print(f"DEBUG: User points: {points}")
+    
     user_rank_name = get_rank(points)
     user_rank_level = 1
     for i, rank_info in enumerate(RANKS):
-        if rank_info.name == user_rank_name: user_rank_level = i + 1; break
+        if rank_info.name == user_rank_name: 
+            user_rank_level = i + 1
+            break
+    
+    print(f"DEBUG: User rank: {user_rank_name}, level: {user_rank_level}")
     
     available_articles = []
     search_path = os.path.join(CONTENT_DIR, "*.md")
+    print(f"DEBUG: Searching in: {search_path}")
+    
     found_files = glob.glob(search_path)
+    print(f"DEBUG: Found files: {found_files}")
+    
     for filepath in found_files:
         filename = os.path.basename(filepath)
+        print(f"DEBUG: Processing file: {filename}")
         try:
             parts = filename.split('__')
             rank_required = int(parts[0])
             article_id = parts[1].replace('.md', '')
+            print(f"DEBUG: File requires rank {rank_required}, article_id: {article_id}")
+            
             if rank_required <= user_rank_level:
                 with open(filepath, 'r', encoding='utf-8') as f:
                     title = f.readline().strip().lstrip('#').strip()
+                print(f"DEBUG: Article accessible: {article_id} - {title}")
                 available_articles.append(ArticleInfo(id=article_id, title=title, rank_required=rank_required))
-        except (ValueError, IndexError): continue
+            else:
+                print(f"DEBUG: Article NOT accessible: rank {rank_required} > user level {user_rank_level}")
+        except (ValueError, IndexError) as e:
+            print(f"DEBUG: Error processing {filename}: {e}")
+            continue
+    
     available_articles.sort(key=lambda x: x.rank_required)
+    print(f"DEBUG: Final articles list: {[a.id for a in available_articles]}")
     return available_articles
-
 @app.get("/api/content/{article_id}", response_model=ArticleContent)
 async def get_article(article_id: str, user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
     user_id = user.get("id")
