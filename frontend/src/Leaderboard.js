@@ -48,7 +48,7 @@ function Leaderboard() {
             try {
                 // === ФИНАЛЬНОЕ ИСПРАВЛЕНИЕ: ВОЗВРАЩАЕМ ЗАГОЛОВОК AUTHORIZATION ===
                 const headers = {
-                    'Authorization': `tma ${window.Telegram.WebApp.initData}`
+                    'X-Init-Data': window.Telegram.WebApp.initData
                 };
                 // ================================================================
 
