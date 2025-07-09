@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 const tg = window.Telegram?.WebApp;
 const BACKEND_URL = "https://n8n-karpix-miniapp-karpix-backeng.g44y6r.easypanel.host";
@@ -33,11 +34,18 @@ function Content() {
     <div>
       <h2>📚 Доступный контент</h2>
       <div className="leaderboard-list">
-        {articles.map((article) => (
-          <div key={article.id} className="leaderboard-item">
-            <span>{article.title}</span>
-          </div>
-        ))}
+        {articles.length > 0 ? (
+          articles.map((article) => (
+            <Link to={`/article/${article.id}`} key={article.id} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="leaderboard-item" style={{cursor: 'pointer'}}>
+                <span>{article.title}</span>
+                <span>→</span>
+              </div>
+            </Link>
+          ))
+        ) : (
+          <p>Для вашего ранга пока нет доступного контента.</p>
+        )}
       </div>
     </div>
   );
