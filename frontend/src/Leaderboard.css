@@ -123,6 +123,7 @@
     flex-shrink: 0;
     border: 2px solid var(--tg-theme-bg-color, #fff);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    pointer-events: none; 
 }
 
 /* Имя пользователя */
