@@ -1,21 +1,21 @@
 /* Общий контейнер для всего экрана лидерборда */
 .leaderboard-container {
     padding: 16px;
-    background-color: #f0f2f5;
+    background-color: var(--tg-theme-secondary-bg-color, #f0f2f5);
     min-height: 100vh;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    color: #333333; /* Базовый цвет текста */
+    color: var(--tg-theme-text-color, #333333);
 }
 
 /* Стили для основной карточки с топ-лидерами */
 .leaderboard-card,
 .your-rank-card {
-    background: #ffffff;
+    background: var(--tg-theme-bg-color, #ffffff);
     border-radius: 12px;
     padding: 16px;
     margin-bottom: 20px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    color: #333333; /* Цвет текста в карточках */
+    color: var(--tg-theme-text-color, #333333);
 }
 
 /* Заголовок карточки */
@@ -30,13 +30,13 @@
     margin: 0;
     font-size: 20px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--tg-theme-text-color, #1a1a1a);
 }
 
 /* Переключатель периодов */
 .period-selector {
     display: flex;
-    background-color: #e9ecef;
+    background-color: var(--tg-theme-secondary-bg-color, #e9ecef);
     border-radius: 8px;
     padding: 4px;
 }
@@ -50,16 +50,16 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
-    color: #495057;
+    color: var(--tg-theme-hint-color, #495057);
 }
 
 .period-selector button:hover {
-    background-color: rgba(255, 255, 255, 0.5);
+    background-color: rgba(128, 128, 128, 0.1);
 }
 
 .period-selector button.active {
-    background-color: #ffffff;
-    color: #007bff;
+    background-color: var(--tg-theme-bg-color, #ffffff);
+    color: var(--tg-theme-button-color, #007bff);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
@@ -67,72 +67,62 @@
 .leaderboard-list {
     display: flex;
     flex-direction: column;
-    gap: 4px; /* Добавляет пространство между строками */
+    gap: 4px;
 }
 
 /* Строка с одним пользователем */
 .user-row {
     display: flex;
     align-items: center;
-    padding: 12px 8px;
+    padding: 10px 8px; /* Немного уменьшил вертикальный padding для компактности */
     border-radius: 8px;
     transition: background-color 0.2s ease;
 }
 
 .user-row:hover {
-    background-color: #f8f9fa;
+    background-color: rgba(128, 128, 128, 0.05); /* Используем RGBA для поддержки тем */
 }
 
-/* Номер или бейдж ранга */
-.rank-number,
-.rank-badge {
+/* --- ИЗМЕНЕНИЯ ЗДЕСЬ --- */
+
+/* 1. Удалены стили .rank-badge, .rank-1, .rank-2, .rank-3 */
+
+/* 2. Добавлены новые стили для контейнера [место] + [медаль] */
+.user-rank-position {
     flex-shrink: 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: #6c757d;
-    width: 32px;
-    height: 32px;
+    width: 60px; /* Фиксированная ширина для выравнивания списка */
     display: flex;
     align-items: center;
-    justify-content: center;
-    margin-right: 12px;
-    border-radius: 50%;
+    justify-content: flex-start; /* Выравниваем по левому краю */
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--tg-theme-hint-color, #6c757d);
+    margin-right: 8px;
 }
 
-.rank-badge {
-    color: white;
-    font-weight: bold;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+.user-rank-position .rank-number {
+    width: 24px; /* Задаем ширину для номера, чтобы медали не сдвигали его */
+    text-align: center;
 }
 
-/* Цвета для топ-3 */
-.rank-1 { 
-    background: linear-gradient(145deg, #FFD700, #FBB034);
-    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
-}
-.rank-2 { 
-    background: linear-gradient(145deg, #C0C0C0, #A9A9A9);
-    box-shadow: 0 2px 8px rgba(192, 192, 192, 0.3);
-}
-.rank-3 { 
-    background: linear-gradient(145deg, #CD7F32, #A0522D);
-    box-shadow: 0 2px 8px rgba(205, 127, 50, 0.3);
+.medal-emoji {
+    font-size: 24px; /* Делаем медаль крупнее */
+    margin-left: 8px;
+    line-height: 1; /* Убираем лишнюю высоту строки у эмодзи */
 }
 
-/* Аватар пользователя */
+/* --- КОНЕЦ ИЗМЕНЕНИЙ --- */
+
+/* Аватар пользователя (убрал !important, они редко нужны) */
 .avatar {
-    width: 40px !important;
-    height: 40px !important;
-    min-width: 40px !important;
-    min-height: 40px !important;
-    max-width: 40px !important;
-    max-height: 40px !important;
-    border-radius: 50% !important;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     margin-right: 12px;
     object-fit: cover;
-    border: 2px solid #fff;
+    flex-shrink: 0;
+    border: 2px solid var(--tg-theme-bg-color, #fff);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    display: block;
 }
 
 /* Имя пользователя */
@@ -143,7 +133,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #1a1a1a !important; /* Темный цвет для лучшей читаемости */
+    color: var(--tg-theme-text-color, #1a1a1a);
     margin-right: 8px;
 }
 
@@ -151,29 +141,29 @@
 .user-score {
     font-weight: 600;
     font-size: 16px;
-    color: #007bff !important;
+    color: var(--tg-theme-link-color, #007bff);
     margin-left: auto;
     flex-shrink: 0;
 }
 
 /* Отдельная карточка для "Your rank" */
 .your-rank-card {
-    border-top: 3px solid #007bff;
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+    border-top: 3px solid var(--tg-theme-button-color, #007bff);
+    background: linear-gradient(135deg, var(--tg-theme-bg-color, #ffffff) 0%, var(--tg-theme-secondary-bg-color, #f8f9ff) 100%);
 }
 
 .your-rank-title {
     margin: 0 0 12px 0;
     font-size: 18px;
     font-weight: 600;
-    color: #007bff;
+    color: var(--tg-theme-button-color, #007bff);
 }
 
 /* Индикатор загрузки и ошибки */
 .loader {
     text-align: center;
     padding: 40px;
-    color: #6c757d;
+    color: var(--tg-theme-hint-color, #6c757d);
     font-size: 16px;
 }
 
@@ -182,7 +172,7 @@
     display: inline-block;
     width: 20px;
     height: 20px;
-    border: 2px solid #6c757d;
+    border: 2px solid var(--tg-theme-hint-color, #6c757d);
     border-radius: 50%;
     border-top-color: transparent;
     animation: spin 1s ease-in-out infinite;
@@ -196,10 +186,10 @@
 .error-message {
     text-align: center;
     padding: 40px;
-    color: #dc3545 !important;
+    color: var(--tg-theme-destructive-text-color, #dc3545);
     font-size: 16px;
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
+    background-color: rgba(220, 53, 69, 0.1); /* RGBA для поддержки тем */
+    border: 1px solid rgba(220, 53, 69, 0.2);
     border-radius: 8px;
 }
 
