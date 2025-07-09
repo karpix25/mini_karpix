@@ -102,20 +102,17 @@ async def get_me(user: dict = Depends(get_current_user), db=Depends(get_db_conne
     db_user = cur.fetchone()
     cur.close()
     
-    points = (db_user[0] * 2) if db_user and db_user[0] is not None else 0
+    points = (db_user[2] * 2) if db_user and db_user[2] is not None else 0
     
-    # Определяем текущий и следующий ранг
-    current_rank_info = RANKS[0]
-    next_rank_info = None
-    for i, rank in enumerate(RANKS):
-        if points >= rank.min_points:
-            current_rank_info = rank
-            if i + 1 < len(RANKS):
-                next_rank_info = RANKS[i+1]
-            else:
-                next_rank_info = None # Это максимальный ранг
-        else:
-            break
+    # Используем нашу надежную функцию get_rank для определения имени ранга
+    current_rank_name = get_rank(points)
+    
+    # Теперь находим полную информацию о текущем ранге
+    current_rank_info = next((r for r in RANKS if r.name == current_rank_name), RANKS[0])
+    
+    # Находим информацию о следующем ранге
+    current_rank_index = RANKS.index(current_rank_info)
+    next_rank_info = RANKS[current_rank_index + 1] if current_rank_index + 1 < len(RANKS) else None
     
     # Рассчитываем прогресс до следующего уровня
     points_to_next_rank = None
@@ -124,9 +121,10 @@ async def get_me(user: dict = Depends(get_current_user), db=Depends(get_db_conne
         points_needed_for_next_rank = next_rank_info.min_points - current_rank_info.min_points
         points_earned_in_current_rank = points - current_rank_info.min_points
         points_to_next_rank = next_rank_info.min_points - points
+        # Предотвращаем деление на ноль, если у ранга 0 очков
         if points_needed_for_next_rank > 0:
             progress_percentage = int((points_earned_in_current_rank / points_needed_for_next_rank) * 100)
-
+    
     first_name = db_user[0] if db_user else user.get("first_name")
     username = db_user[1] if db_user else user.get("username")
 
@@ -136,7 +134,7 @@ async def get_me(user: dict = Depends(get_current_user), db=Depends(get_db_conne
         username=username,
         points=points,
         rank=current_rank_info.name,
-        next_rank_name=next_rank_info.name if next_rank_info else None,
+        next_rank_name=next_rank_info.name if next_rank_info else "Max",
         points_to_next_rank=points_to_next_rank,
         progress_percentage=progress_percentage
     )
