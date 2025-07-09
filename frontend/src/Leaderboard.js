@@ -83,7 +83,7 @@ function Leaderboard() {
         <div className="leaderboard-container">
             <div className="leaderboard-card">
                 <div className="leaderboard-header">
-                    <h2>Leaderboard</h2>
+                    <h2>Leaderboard {new Date().toLocaleTimeString()}</h2>
                     <div className="period-selector">
                         <button onClick={() => setPeriod('7d')} className={period === '7d' ? 'active' : ''}>7-day</button>
                         <button onClick={() => setPeriod('30d')} className={period === '30d' ? 'active' : ''}>30-day</button>
