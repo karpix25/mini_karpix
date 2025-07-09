@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+UserRowimport React, { useState, useEffect } from 'react';
 import './Leaderboard.css'; // Убедитесь, что этот файл существует и содержит стили
 
 // Маленький компонент для отображения бейджа с рангом
@@ -14,7 +14,7 @@ const RankBadge = ({ rank }) => {
 // Компонент для одной строки в списке лидеров
 const UserRow = ({ user, period }) => {
     const scoreFormatted = period !== 'all' && user.score > 0 ? `+${user.score}` : user.score;
-    const avatarUrl = user.avatar_url || `https://api.dicebear.com/8.x/pixel-art/svg?seed=${user.username || user.user_id}`;
+    const avatarUrl = user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.first_name || user.username || 'User')}&background=random&color=fff&size=128`;
 
     return (
         <div className="user-row">
