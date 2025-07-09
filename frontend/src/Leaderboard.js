@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './Leaderboard.css'; // Убедитесь, что этот файл существует и содержит стили
+import './Leaderboard.css';
 
 // Маленький компонент для отображения бейджа с рангом
 const RankBadge = ({ rank }) => {
@@ -83,8 +83,9 @@ function Leaderboard() {
         fetchLeaders();
     }, [period]); 
 
+    // Находим текущего пользователя в топе или используем данные из current_user
     const currentUserForDisplay = data.top_users.find(u => data.current_user && u.user_id === data.current_user.user_id);
-    const currentUserRankData = data.current_user ? { ...currentUserForDisplay, ...data.current_user } : null;
+    const currentUserRankData = data.current_user ? (currentUserForDisplay || data.current_user) : null;
 
     return (
         <div className="leaderboard-container">
