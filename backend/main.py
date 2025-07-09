@@ -266,3 +266,72 @@ async def get_all_ranks(user: dict = Depends(get_current_user), db=Depends(get_d
     ranks_list = []
     for i, rank in enumerate(RANKS): ranks_list.append(RankInfo(level=i + 1, name=rank.name, min_points=rank.min_points, is_unlocked=(points >= rank.min_points)))
     return ranks_list
+
+
+# VVVVVV  ДОБАВЬТЕ ЭТОТ БЛОК В САМЫЙ КОНЕЦ main.py  VVVVVV
+
+# Новые модели ответа ТОЛЬКО для нового эндпоинта
+class LeaderboardUserV2(BaseModel):
+    rank: int
+    user_id: int
+    first_name: Optional[str] = None
+    username: Optional[str] = None
+    score: int
+
+class CurrentUserRankV2(BaseModel):
+    rank: int
+    score: int
+
+class LeaderboardResponseV2(BaseModel):
+    top_users: List[LeaderboardUserV2]
+    current_user: Optional[CurrentUserRankV2] = None
+
+@app.get("/api/v2/leaderboard", response_model=LeaderboardResponseV2)
+async def get_leaderboard_v2(
+    period: Literal['7d', '30d', 'all'] = '7d',
+    user: dict = Depends(get_current_user), # Используем вашу рабочую авторизацию!
+    db=Depends(get_db_connection)
+):
+    current_user_id = user.get("id")
+    
+    # Режим "За все время" использует старую, простую логику
+    if period == 'all':
+        query = """
+            SELECT
+                telegram_id as user_id, first_name, username, (message_count * 2) as score,
+                RANK() OVER (ORDER BY message_count DESC, telegram_id) as rank
+            FROM channel_subscribers WHERE is_active = TRUE;
+        """
+    # Режимы по периодам используют новую, сложную логику
+    else:
+        interval_sql = f"INTERVAL '{'7 days' if period == '7d' else '30 days'}'"
+        query = f"""
+            WITH user_scores AS (
+                SELECT user_id, SUM(points) AS score
+                FROM messages
+                WHERE message_date >= NOW() - {interval_sql}
+                GROUP BY user_id
+            )
+            SELECT
+                s.user_id, s.score, cs.first_name, cs.username,
+                RANK() OVER (ORDER BY s.score DESC, s.user_id) as rank
+            FROM user_scores s
+            JOIN channel_subscribers cs ON cs.telegram_id = s.user_id;
+        """
+
+    cur = db.cursor()
+    cur.execute(query)
+    all_users = cur.fetchall()
+    cur.close()
+
+    top_users = [LeaderboardUserV2(**u) for u in all_users[:20]]
+    
+    current_user_data = None
+    for u in all_users:
+        if u['user_id'] == current_user_id:
+            current_user_data = CurrentUserRankV2(rank=u['rank'], score=u['score'])
+            break
+
+    return LeaderboardResponseV2(top_users=top_users, current_user=current_user_data)
+
+# ^^^^^^ КОНЕЦ БЛОКА ДЛЯ ДОБАВЛЕНИЯ ^^^^^^
