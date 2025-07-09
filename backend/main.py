@@ -28,34 +28,20 @@ app.add_middleware(
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"], # Разрешаем любые заголовки, включая Authorization
 )
 
-# --- Существующие модели данных ---
+# --- Модели данных ---
 class UserRank(BaseModel): name: str; min_points: int
 class UserData(BaseModel): id: int; first_name: Optional[str] = None; username: Optional[str] = None; points: int; rank: str; next_rank_name: Optional[str] = None; points_to_next_rank: Optional[int] = None; progress_percentage: int
 class RankInfo(BaseModel): level: int; name: str; min_points: int; is_unlocked: bool
 class ArticleInfo(BaseModel): id: str; title: str; rank_required: int
 class ArticleContent(BaseModel): id: str; content: str
+class LeaderboardUserRow(BaseModel): rank: int; user_id: int; first_name: Optional[str] = None; username: Optional[str] = None; score: int
+class CurrentUserRankInfo(BaseModel): rank: int; score: int
+class LeaderboardResponse(BaseModel): top_users: List[LeaderboardUserRow]; current_user: Optional[CurrentUserRankInfo] = None
 
-# VVVVVV  ДОБАВЬТЕ ЭТИ НОВЫЕ МОДЕЛИ ДЛЯ ЛИДЕРБОРДА  VVVVVV
-class LeaderboardUserRow(BaseModel):
-    rank: int
-    user_id: int
-    first_name: Optional[str] = None
-    username: Optional[str] = None
-    score: int
-
-class CurrentUserRankInfo(BaseModel):
-    rank: int
-    score: int
-
-class LeaderboardResponse(BaseModel):
-    top_users: List[LeaderboardUserRow]
-    current_user: Optional[CurrentUserRankInfo] = None
-# ^^^^^^ КОНЕЦ НОВЫХ МОДЕЛЕЙ ^^^^^^
-
-# --- Логика Рангов (остается без изменений) ---
+# --- Логика Рангов ---
 RANKS = [
     UserRank(name="Новичок", min_points=0),
     UserRank(name="Активный участник", min_points=51),
@@ -70,7 +56,6 @@ def get_rank(points: int) -> str:
 
 # --- Утилиты ---
 def get_db_connection():
-    # Используем RealDictCursor, чтобы получать результаты в виде словарей
     conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
     try: yield conn
     finally: conn.close()
@@ -84,15 +69,30 @@ def validate_init_data(init_data: str, bot_token: str) -> Optional[dict]:
         if h.hexdigest() == parsed_data["hash"]: return json.loads(unquote(parsed_data.get("user", "{}")))
     except Exception: return None
 
-async def get_current_user(x_init_data: str = Header(None)):
-    if not x_init_data: raise HTTPException(status_code=401, detail="X-Init-Data header is missing")
-    user_data = validate_init_data(x_init_data, BOT_TOKEN)
-    if not user_data: raise HTTPException(status_code=401, detail="Invalid InitData")
+# VVVVVV  ЭТО ГЛАВНОЕ ИСПРАВЛЕНИЕ  VVVVVV
+# Меняем get_current_user, чтобы он работал со стандартным заголовком Authorization
+async def get_current_user(authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+    
+    # Проверяем, что используется правильная схема 'tma'
+    try:
+        scheme, init_data = authorization.split()
+        if scheme.lower() != 'tma':
+            raise ValueError("Invalid scheme")
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid authorization scheme. Expected 'tma <init_data>'")
+
+    # Валидируем сами данные
+    user_data = validate_init_data(init_data, BOT_TOKEN)
+    if not user_data:
+        raise HTTPException(status_code=401, detail="Invalid InitData")
     return user_data
+# ^^^^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^^^^
+
 
 # --- Эндпоинты API ---
 
-# VVVVVV  ПОЛНОСТЬЮ ЗАМЕНИТЕ СТАРЫЙ ЭНДПОИНТ /api/leaderboard НА ЭТОТ НОВЫЙ  VVVVVV
 @app.get("/api/leaderboard", response_model=LeaderboardResponse)
 async def get_leaderboard_by_period(
     period: Literal['7d', '30d', 'all'] = '7d',
@@ -101,47 +101,24 @@ async def get_leaderboard_by_period(
 ):
     current_user_id = user.get("id")
     
-    # Определяем временной интервал для SQL-запроса
     interval_map = {'7d': "INTERVAL '7 days'", '30d': "INTERVAL '30 days'"}
     date_filter_sql = f"WHERE m.message_date >= NOW() - {interval_map[period]}" if period in interval_map else ""
 
-    # Этот SQL-запрос делает всю магию:
-    # 1. Считает очки для каждого пользователя за период (user_scores).
-    # 2. Ранжирует всех пользователей с помощью оконной функции RANK() (ranked_users).
-    # 3. Выбирает всех ранжированных пользователей.
     query = f"""
         WITH user_scores AS (
-            SELECT
-                user_id,
-                SUM(points) AS total_score
-            FROM messages m
-            {date_filter_sql}
-            GROUP BY user_id
+            SELECT user_id, SUM(points) AS total_score FROM messages m {date_filter_sql} GROUP BY user_id
         ),
         ranked_users AS (
-            SELECT
-                s.user_id,
-                s.total_score,
-                cs.first_name,
-                cs.username,
-                RANK() OVER (ORDER BY s.total_score DESC, s.user_id) as rank
-            FROM user_scores s
-            JOIN channel_subscribers cs ON cs.telegram_id = s.user_id
+            SELECT s.user_id, s.total_score, cs.first_name, cs.username, RANK() OVER (ORDER BY s.total_score DESC, s.user_id) as rank
+            FROM user_scores s JOIN channel_subscribers cs ON cs.telegram_id = s.user_id
         )
         SELECT * FROM ranked_users;
     """
     
-    # Для режима 'all' используется старый, более быстрый метод
     if period == 'all':
         query = """
-            SELECT
-                telegram_id as user_id,
-                first_name,
-                username,
-                (message_count * 2) as total_score,
-                RANK() OVER (ORDER BY message_count DESC, telegram_id) as rank
-            FROM channel_subscribers
-            WHERE is_active = TRUE;
+            SELECT telegram_id as user_id, first_name, username, (message_count * 2) as total_score, RANK() OVER (ORDER BY message_count DESC, telegram_id) as rank
+            FROM channel_subscribers WHERE is_active = TRUE;
         """
 
     cur = db.cursor()
@@ -149,18 +126,8 @@ async def get_leaderboard_by_period(
     all_users = cur.fetchall()
     cur.close()
 
-    # Формируем список топ-20 пользователей
-    top_users = [
-        LeaderboardUserRow(
-            rank=u['rank'],
-            user_id=u['user_id'],
-            first_name=u['first_name'],
-            username=u['username'],
-            score=u['total_score']
-        ) for u in all_users[:20]
-    ]
+    top_users = [ LeaderboardUserRow(**u) for u in all_users[:20] ]
 
-    # Ищем в полном списке данные о текущем пользователе
     current_user_data = None
     for u in all_users:
         if u['user_id'] == current_user_id:
@@ -168,12 +135,8 @@ async def get_leaderboard_by_period(
             break
 
     return LeaderboardResponse(top_users=top_users, current_user=current_user_data)
-# ^^^^^^ КОНЕЦ ЗАМЕНЫ ЭНДПОИНТА ЛИДЕРБОРДА ^^^^^^
 
 
-# --- Остальные эндпоинты (/me, /content, /ranks) остаются без изменений ---
-# ... (вставьте сюда ваши существующие функции get_me, get_content_list, get_article, get_all_ranks) ...
-# Я скопирую их из вашего кода для полноты
 @app.get("/api/me", response_model=UserData)
 async def get_me(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
     user_id = user.get("id")
