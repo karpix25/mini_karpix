@@ -93,6 +93,7 @@ async def get_current_user(x_init_data: str = Header(None)):
 
 # --- Эндпоинты API ---
 
+# VVVVVV  ЗАМЕНИТЕ СТАРУЮ ФУНКЦИЮ GET_ME НА ЭТУ  VVVVVV
 @app.get("/api/me", response_model=UserData)
 async def get_me(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
     user_id = user.get("id")
@@ -100,11 +101,46 @@ async def get_me(user: dict = Depends(get_current_user), db=Depends(get_db_conne
     cur.execute("SELECT first_name, username, message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
     db_user = cur.fetchone()
     cur.close()
+    
     points = (db_user[2] * 2) if db_user and db_user[2] is not None else 0
-    rank = get_rank(points)
+    
+    # Определяем текущий и следующий ранг
+    current_rank_info = RANKS[0]
+    next_rank_info = None
+    for i, rank in enumerate(RANKS):
+        if points >= rank.min_points:
+            current_rank_info = rank
+            if i + 1 < len(RANKS):
+                next_rank_info = RANKS[i+1]
+            else:
+                next_rank_info = None # Это максимальный ранг
+        else:
+            break
+    
+    # Рассчитываем прогресс до следующего уровня
+    points_to_next_rank = None
+    progress_percentage = 100
+    if next_rank_info:
+        points_needed_for_next_rank = next_rank_info.min_points - current_rank_info.min_points
+        points_earned_in_current_rank = points - current_rank_info.min_points
+        points_to_next_rank = next_rank_info.min_points - points
+        if points_needed_for_next_rank > 0:
+            progress_percentage = int((points_earned_in_current_rank / points_needed_for_next_rank) * 100)
+
     first_name = db_user[0] if db_user else user.get("first_name")
     username = db_user[1] if db_user else user.get("username")
-    return UserData(id=user_id, first_name=first_name, username=username, points=points, rank=rank)
+
+    return UserData(
+        id=user_id,
+        first_name=first_name,
+        username=username,
+        points=points,
+        rank=current_rank_info.name,
+        next_rank_name=next_rank_info.name if next_rank_info else None,
+        points_to_next_rank=points_to_next_rank,
+        progress_percentage=progress_percentage
+    )
+# ^^^^^^ КОНЕЦ ЗАМЕНЫ ^^^^^^
 
 @app.get("/api/leaderboard", response_model=List[LeaderboardUser])
 async def get_leaderboard(db=Depends(get_db_connection)):
@@ -213,3 +249,26 @@ async def get_article(article_id: str, user: dict = Depends(get_current_user), d
     with open(found_path, 'r', encoding='utf-8') as f:
         content = f.read()
     return ArticleContent(id=article_id, content=content)
+
+# VVVVVV  ДОБАВЬТЕ ЭТОТ НОВЫЙ ЭНДПОИНТ В КОНЕЦ ФАЙЛА  VVVVVV
+@app.get("/api/ranks", response_model=List[RankInfo])
+async def get_all_ranks(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
+    # Получаем текущие очки пользователя, чтобы знать, какие ранги разблокированы
+    user_id = user.get("id")
+    cur = db.cursor()
+    cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
+    db_user = cur.fetchone()
+    cur.close()
+    points = (db_user[2] * 2) if db_user and db_user[2] is not None else 0
+
+    # Формируем список всех рангов с информацией о разблокировке
+    ranks_list = []
+    for i, rank in enumerate(RANKS):
+        ranks_list.append(RankInfo(
+            level=i + 1,
+            name=rank.name,
+            min_points=rank.min_points,
+            is_unlocked=(points >= rank.min_points)
+        ))
+    return ranks_list
+# ^^^^^^ КОНЕЦ ДОБАВЛЕНИЯ ^^^^^^
