@@ -15,26 +15,26 @@ const RankBadge = ({ rank }) => {
 const UserRow = ({ user, period }) => {
     const scoreFormatted = period !== 'all' && user.score > 0 ? `+${user.score}` : user.score;
     
-    // Улучшенная логика для аватаров
-    const displayName = user.first_name || user.username || 'User';
-    const initials = displayName.split(' ').map(word => word[0]).join('').substring(0, 2).toUpperCase();
+    // Формируем полное имя: Имя + Фамилия (если есть)
+    const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username || 'User';
+    const initials = fullName.split(' ').map(word => word[0]).join('').substring(0, 2).toUpperCase();
     
-    // Используем UI Avatars с инициалами
-    const avatarUrl = user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=4a90e2&color=fff&size=40&font-size=0.6`;
+    // Приоритет аватарок: сохраненное фото из базы -> UI Avatars с инициалами
+    const avatarUrl = user.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=4a90e2&color=fff&size=40&font-size=0.6`;
 
     return (
         <div className="user-row">
             <RankBadge rank={user.rank} />
             <img 
                 src={avatarUrl} 
-                alt={displayName} 
+                alt={fullName} 
                 className="avatar"
                 onError={(e) => {
-                    // Если изображение не загрузилось, показываем запасной вариант
+                    // Fallback к UI Avatars если сохраненное фото не загрузилось
                     e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=6c757d&color=fff&size=40`;
                 }}
             />
-            <span className="user-name">{displayName}</span>
+            <span className="user-name">{fullName}</span>
             <span className="user-score">{scoreFormatted}</span>
         </div>
     );
