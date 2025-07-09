@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
 
-// Получаем объект Telegram Web App
-const tg = window.Telegram.WebApp;
-
-// URL вашего бэкенда. Убедитесь, что нет лишних слэшей в конце.
+// URL вашего бэкенда.
 const BACKEND_URL = "https://n8n-karpix-miniapp-karpix-backeng.g44y6r.easypanel.host"; 
+
+// Безопасно получаем объект Telegram Web App
+const tg = window.Telegram?.WebApp;
 
 function App() {
   const [userData, setUserData] = useState(null);
@@ -13,25 +13,21 @@ function App() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Сообщаем Telegram, что приложение готово
-    if (tg.ready) {
+    // Сообщаем Telegram, что приложение готово, только если мы в Telegram
+    if (tg) {
         tg.ready();
     }
     
     const fetchUserData = async () => {
       try {
-        // Проверяем, есть ли initData
-        if (!tg.initData) {
-          // Это для отладки в обычном браузере, а не в Telegram
-          setError("Это приложение должно быть открыто внутри Telegram.");
-          setLoading(false);
-          return;
+        // Проверяем, есть ли initData. Если нет - показываем ошибку.
+        if (!tg?.initData) {
+          throw new Error("Это приложение предназначено для работы внутри Telegram.");
         }
 
         const response = await fetch(`${BACKEND_URL}/api/me`, {
           method: 'GET',
           headers: {
-            // Отправляем initData в заголовке для авторизации на бэкенде
             'X-Init-Data': tg.initData,
           },
         });
@@ -46,8 +42,8 @@ function App() {
 
       } catch (err) {
         setError(err.message);
-        // Для отладки можно выводить ошибку на главный экран
-        if (tg.showAlert) {
+        // Показываем alert в Telegram, если есть такая возможность
+        if (tg?.showAlert) {
             tg.showAlert(err.message);
         }
       } finally {
@@ -56,14 +52,14 @@ function App() {
     };
 
     fetchUserData();
-  }, []);
+  }, []); // Пустой массив зависимостей означает, что этот эффект выполнится один раз при запуске
 
   if (loading) {
     return <div className="App-header">Загрузка данных пользователя...</div>;
   }
 
   if (error) {
-    return <div className="App-header">Ошибка: {error}</div>;
+    return <div className="App-header"><strong>Ошибка:</strong><p>{error}</p></div>;
   }
 
   return (
@@ -76,7 +72,8 @@ function App() {
             <p>У тебя <strong>{userData.points}</strong> баллов.</p>
           </div>
         ) : (
-          <p>Не удалось загрузить данные. Убедитесь, что вы в Telegram.</p>
+          // Это сообщение мы не должны увидеть, т.к. есть обработка ошибок
+          <p>Не удалось загрузить данные.</p>
         )}
       </header>
     </div>
