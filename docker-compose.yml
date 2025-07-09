@@ -24,6 +24,14 @@ services:
     depends_on:
       - postgres
 
+  # --- НОВЫЙ СЕРВИС ДЛЯ ФРОНТЕНДА ---
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      # Мы открываем порт 8080 и связываем его с портом 80 внутри контейнера
+      - "8080:80" 
+
   postgres:
     image: postgres:14-alpine
     restart: unless-stopped
