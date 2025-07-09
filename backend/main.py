@@ -257,7 +257,7 @@ async def get_all_ranks(user: dict = Depends(get_current_user), db=Depends(get_d
     cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
     db_user = cur.fetchone()
     cur.close()
-    points = (db_user[2] * 2) if db_user and db_user[2] is not None else 0
+    points = (db_user[0] * 2) if db_user and db_user[0] is not None else 0
 
     # Формируем список всех рангов с информацией о разблокировке
     ranks_list = []
