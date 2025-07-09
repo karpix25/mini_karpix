@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const tg = window.Telegram?.WebApp;
-const BACKEND_URL = "https://n8n-karpix-miniapp-karpix-backeng.g44y6r.easypanel.host";
+const BACKEND_URL = "https://miniback.karpix.com";
 
 function Content() {
   const [articles, setArticles] = useState([]);
