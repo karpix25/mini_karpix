@@ -2,7 +2,7 @@ import os
 import hmac
 import hashlib
 import json
-import glob  # Добавляем этот импорт для сканирования файлов
+import glob
 from urllib.parse import unquote, parse_qsl
 from fastapi import FastAPI, Depends, HTTPException, Header
 from pydantic import BaseModel
@@ -94,10 +94,10 @@ async def get_leaderboard(db=Depends(get_db_connection)):
     cur.close()
     return leaders
 
-# --- НОВАЯ АВТОМАТИЧЕСКАЯ ЛОГИКА ДЛЯ КОНТЕНТА ---
+# --- ЛОГИКА ДЛЯ КОНТЕНТА С ОТЛАДОЧНОЙ ИНФОРМАЦИЕЙ ---
 @app.get("/api/content", response_model=List[ArticleInfo])
 async def get_content_list(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
-    # 1. Определяем числовой уровень ранга пользователя
+    # --- БЛОК 1: ОПРЕДЕЛЕНИЕ РАНГА ---
     user_id = user.get("id")
     cur = db.cursor()
     cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
@@ -110,43 +110,57 @@ async def get_content_list(user: dict = Depends(get_current_user), db=Depends(ge
         if rank_info.name == user_rank_name:
             user_rank_level = i + 1
             break
-
-    # 2. Сканируем папку с контентом и формируем список доступных статей
+    
+    # DEBUG: Выводим информацию о пользователе в лог
+    print(f"--- DEBUG INFO FOR USER {user_id} ---")
+    print(f"Points: {points}, Rank Name: '{user_rank_name}', Rank Level: {user_rank_level}")
+    
+    # --- БЛОК 2: СКАНИРОВАНИЕ ПАПКИ ---
     available_articles = []
-    # Ищем все файлы, соответствующие шаблону *.md в папке CONTENT_DIR
-    for filepath in glob.glob(os.path.join(CONTENT_DIR, "*.md")):
+    search_path = os.path.join(CONTENT_DIR, "*.md")
+    
+    # DEBUG: Выводим путь, по которому ищем файлы
+    print(f"Scanning for files in: {search_path}")
+    
+    found_files = glob.glob(search_path)
+    
+    # DEBUG: Выводим список всех найденных файлов
+    print(f"Found files: {found_files}")
+
+    for filepath in found_files:
         filename = os.path.basename(filepath)
+        # DEBUG: Обрабатываем каждый найденный файл
+        print(f"Processing file: {filename}")
         try:
-            # Пытаемся распарсить имя файла, например "2__first-exclusive.md"
             parts = filename.split('__')
             rank_required = int(parts[0])
             article_id = parts[1].replace('.md', '')
 
-            # Проверяем, доступна ли статья пользователю
             if rank_required <= user_rank_level:
-                # Читаем первую строку файла, чтобы получить заголовок
                 with open(filepath, 'r', encoding='utf-8') as f:
-                    # Убираем '#' и лишние пробелы в начале/конце
                     title = f.readline().strip().lstrip('#').strip()
-                
                 available_articles.append(
                     ArticleInfo(id=article_id, title=title, rank_required=rank_required)
                 )
+                # DEBUG: Сообщаем об успешном добавлении статьи
+                print(f"  -> SUCCESS: Added article '{title}' for rank {rank_required}")
+            else:
+                # DEBUG: Сообщаем, почему статья пропущена
+                print(f"  -> SKIPPED: User rank ({user_rank_level}) is less than required ({rank_required})")
+
         except (ValueError, IndexError):
-            # Если имя файла не соответствует формату, просто игнорируем его
-            print(f"Warning: Skipping file with incorrect name format: {filename}")
+            # DEBUG: Сообщаем об ошибке формата имени файла
+            print(f"  -> FAILED: Incorrect file name format. Skipping.")
             continue
     
-    # Сортируем статьи по требуемому рангу
     available_articles.sort(key=lambda x: x.rank_required)
     
+    print("--- DEBUG END ---")
     return available_articles
 
-# --- НОВАЯ АВТОМАТИЧЕСКАЯ ЛОГИКА ДЛЯ ПОЛУЧЕНИЯ СТАТЬИ ---
+# --- ЛОГИКА ДЛЯ ПОЛУЧЕНИЯ СТАТЬИ С ОТЛАДОЧНОЙ ИНФОРМАЦИЕЙ ---
 @app.get("/api/content/{article_id}", response_model=ArticleContent)
 async def get_article(article_id: str, user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
-    # Тут тоже нужно проверить доступ по рангу, чтобы пользователь не мог получить статью по прямой ссылке
-    # (этот код повторяет логику из get_content_list)
     user_id = user.get("id")
     cur = db.cursor()
     cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
@@ -160,10 +174,6 @@ async def get_article(article_id: str, user: dict = Depends(get_current_user), d
             user_rank_level = i + 1
             break
 
-    # Ищем файл, который соответствует запрошенному ID
-    found_path = None
-    target_rank_required = 0
-    # Ищем файл с нужным ID, например, *__welcome.md
     search_pattern = os.path.join(CONTENT_DIR, f"*__{article_id}.md")
     found_files = glob.glob(search_pattern)
 
@@ -177,11 +187,9 @@ async def get_article(article_id: str, user: dict = Depends(get_current_user), d
     else:
         raise HTTPException(status_code=404, detail="Article not found")
     
-    # Проверяем, есть ли у пользователя доступ
     if user_rank_level < target_rank_required:
         raise HTTPException(status_code=403, detail="You do not have high enough rank to view this content")
 
-    # Если доступ есть, отдаем контент
     with open(found_path, 'r', encoding='utf-8') as f:
         content = f.read()
     return ArticleContent(id=article_id, content=content)
