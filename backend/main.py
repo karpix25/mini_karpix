@@ -102,7 +102,7 @@ async def get_me(user: dict = Depends(get_current_user), db=Depends(get_db_conne
     db_user = cur.fetchone()
     cur.close()
     
-    points = (db_user[2] * 2) if db_user and db_user[2] is not None else 0
+    points = (db_user[0] * 2) if db_user and db_user[0] is not None else 0
     
     # Определяем текущий и следующий ранг
     current_rank_info = RANKS[0]
