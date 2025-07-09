@@ -14,13 +14,27 @@ const RankBadge = ({ rank }) => {
 // Компонент для одной строки в списке лидеров
 const UserRow = ({ user, period }) => {
     const scoreFormatted = period !== 'all' && user.score > 0 ? `+${user.score}` : user.score;
-    const avatarUrl = user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.first_name || user.username || 'User')}&background=random&color=fff&size=128`;
+    
+    // Улучшенная логика для аватаров
+    const displayName = user.first_name || user.username || 'User';
+    const initials = displayName.split(' ').map(word => word[0]).join('').substring(0, 2).toUpperCase();
+    
+    // Используем UI Avatars с инициалами
+    const avatarUrl = user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=4a90e2&color=fff&size=128&font-size=0.6`;
 
     return (
         <div className="user-row">
             <RankBadge rank={user.rank} />
-            <img src={avatarUrl} alt={user.first_name || user.username} className="avatar" />
-            <span className="user-name">{user.first_name || user.username}</span>
+            <img 
+                src={avatarUrl} 
+                alt={displayName} 
+                className="avatar"
+                onError={(e) => {
+                    // Если изображение не загрузилось, показываем запасной вариант
+                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=6c757d&color=fff&size=128`;
+                }}
+            />
+            <span className="user-name">{displayName}</span>
             <span className="user-score">{scoreFormatted}</span>
         </div>
     );
