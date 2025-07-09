@@ -1,0 +1,149 @@
+/* Общий контейнер для всего экрана лидерборда */
+.leaderboard-container {
+    padding: 16px;
+    background-color: #f0f2f5;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Стили для основной карточки с топ-лидерами */
+.leaderboard-card,
+.your-rank-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Заголовок карточки */
+.leaderboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.leaderboard-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+/* Переключатель периодов */
+.period-selector {
+    display: flex;
+    background-color: #e9ecef;
+    border-radius: 8px;
+    padding: 4px;
+}
+
+.period-selector button {
+    border: none;
+    background: transparent;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.period-selector button.active {
+    background-color: #ffffff;
+    color: #007bff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Список лидеров */
+.leaderboard-list {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Строка с одним пользователем */
+.user-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+}
+
+/* Номер или бейдж ранга */
+.rank-number,
+.rank-badge {
+    flex-shrink: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #6c757d;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+}
+
+.rank-badge {
+    color: white;
+    border-radius: 50%;
+    font-weight: bold;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+/* Цвета для топ-3 */
+.rank-1 { background: linear-gradient(145deg, #FFD700, #FBB034); }
+.rank-2 { background: linear-gradient(145deg, #C0C0C0, #A9A9A9); }
+.rank-3 { background: linear-gradient(145deg, #CD7F32, #A0522D); }
+
+/* Аватар пользователя */
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 12px;
+    object-fit: cover;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Имя пользователя */
+.user-name {
+    flex-grow: 1;
+    font-weight: 500;
+    font-size: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Очки пользователя */
+.user-score {
+    font-weight: 600;
+    font-size: 16px;
+    color: #007bff;
+    margin-left: 12px;
+}
+
+/* Отдельная карточка для "Your rank" */
+.your-rank-card {
+    border-top: 3px solid #007bff;
+}
+
+.your-rank-title {
+    margin: 0 0 10px 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* Индикатор загрузки и ошибки */
+.loader,
+.error-message {
+    text-align: center;
+    padding: 40px;
+    color: #6c757d;
+    font-size: 16px;
+}
+
+.error-message {
+    color: #dc3545;
+}
