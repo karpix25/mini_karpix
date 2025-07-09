@@ -12,8 +12,7 @@ services:
   backend:
     build: ./backend
     restart: unless-stopped
-    ports:
-      - "8000:8000"
+    # Секция 'ports' полностью удалена. Настройку домена делаем в UI EasyPanel.
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - BOT_TOKEN=${BOT_TOKEN}
@@ -22,13 +21,10 @@ services:
     depends_on:
       - postgres
 
-  # --- НОВЫЙ СЕРВИС ДЛЯ ФРОНТЕНДА ---
   frontend:
     build: ./frontend
     restart: unless-stopped
-    ports:
-      # Мы открываем порт 8080 и связываем его с портом 80 внутри контейнера
-      - "8080:80" 
+    # Секция 'ports' полностью удалена. Настройку домена делаем в UI EasyPanel.
 
   postgres:
     image: postgres:14-alpine
