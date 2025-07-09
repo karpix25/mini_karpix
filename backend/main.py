@@ -201,19 +201,19 @@ async def get_leaderboard_by_period(
     ]
 
     # Ищем данные о текущем пользователе
-current_user_data = None
-for u in all_users:
-    if u['user_id'] == current_user_id:
-        current_user_data = CurrentUserRankInfo(
-            rank=u['rank'], 
-            user_id=u['user_id'],
-            first_name=u['first_name'],
-            last_name=u['last_name'],
-            username=u['username'],
-            photo_url=u['photo_url'],
-            score=u['total_score']
-        )
-        break
+    current_user_data = None
+    for u in all_users:
+        if u['user_id'] == current_user_id:
+            current_user_data = CurrentUserRankInfo(
+                rank=u['rank'], 
+                user_id=u['user_id'],
+                first_name=u['first_name'],
+                last_name=u['last_name'],
+                username=u['username'],
+                photo_url=u['photo_url'],
+                score=u['total_score']
+            )
+            break
 
     return LeaderboardResponse(top_users=top_users, current_user=current_user_data)
 
