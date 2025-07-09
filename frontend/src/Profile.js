@@ -5,7 +5,7 @@ import 'react-circular-progressbar/dist/styles.css';
 import './Profile.css'; // Скоро создадим этот файл
 
 const tg = window.Telegram?.WebApp;
-const BACKEND_URL = "https://n8n-karpix-miniapp-karpix-backeng.g44y6r.easypanel.host";
+const BACKEND_URL = "https://miniback.karpix.com";
 
 function Profile() {
   const [userData, setUserData] = useState(null);
