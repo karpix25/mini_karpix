@@ -5,7 +5,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #282c34; /* Цвет фона, как в Telegram */
+  background-color: #282c34;
   color: white;
 }
 
@@ -13,13 +13,13 @@ body {
   text-align: center;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100vh; /* Занимаем всю высоту экрана */
 }
 
 .content {
-  flex-grow: 1;
+  flex-grow: 1; /* Основной контент будет расти, чтобы занять все доступное место */
   padding: 20px;
-  overflow-y: auto; /* Позволяет прокручивать контент */
+  overflow-y: auto; /* Позволяет прокручивать контент, если он не влезает */
 }
 
 .nav-tabs {
@@ -28,6 +28,7 @@ body {
   background-color: #1c1f24;
   padding: 10px 0;
   border-top: 1px solid #444;
+  flex-shrink: 0; /* Навигация не будет сжиматься */
 }
 
 .nav-tab {
@@ -35,27 +36,37 @@ body {
   cursor: pointer;
   color: #aaa;
   font-weight: bold;
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+  transition: color 0.2s, border-bottom-color 0.2s;
 }
 
 .nav-tab.active {
-  color: #61dafb; /* Цвет активной вкладки */
-  border-bottom: 2px solid #61dafb;
+  color: #61dafb;
+  border-bottom-color: #61dafb;
 }
 
-/* Стили для лидерборда */
 .leaderboard-list {
   list-style: none;
   padding: 0;
+  margin: 0 auto;
+  max-width: 500px;
   text-align: left;
 }
 
 .leaderboard-item {
   display: flex;
   justify-content: space-between;
-  padding: 10px;
-  margin-bottom: 5px;
+  align-items: center;
+  padding: 15px;
+  margin-bottom: 8px;
   background-color: #3a3f4b;
   border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.leaderboard-item:hover {
+    background-color: #4a505c;
 }
 
 .leaderboard-item span:first-child {
