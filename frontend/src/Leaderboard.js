@@ -1,4 +1,4 @@
-UserRowimport React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Leaderboard.css'; // Убедитесь, что этот файл существует и содержит стили
 
 // Маленький компонент для отображения бейджа с рангом
@@ -40,7 +40,6 @@ const UserRow = ({ user, period }) => {
     );
 };
 
-
 // Главный компонент Лидерборда
 function Leaderboard() {
     const [period, setPeriod] = useState('7d');
@@ -60,11 +59,9 @@ function Leaderboard() {
             }
 
             try {
-                // === ФИНАЛЬНОЕ ИСПРАВЛЕНИЕ: ВОЗВРАЩАЕМ ЗАГОЛОВОК AUTHORIZATION ===
                 const headers = {
                     'X-Init-Data': window.Telegram.WebApp.initData
                 };
-                // ================================================================
 
                 const response = await fetch(`https://miniback.karpix.com/api/leaderboard?period=${period}`, { headers });
                 
