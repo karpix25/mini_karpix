@@ -201,8 +201,8 @@ async def get_leaderboard_by_period(
     ]
 
     # Ищем данные о текущем пользователе
-    current_user_data = None
-    for u in all_users:
+current_user_data = None
+for u in all_users:
     if u['user_id'] == current_user_id:
         current_user_data = CurrentUserRankInfo(
             rank=u['rank'], 
