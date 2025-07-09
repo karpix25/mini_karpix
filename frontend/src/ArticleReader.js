@@ -5,8 +5,7 @@ import remarkGfm from 'remark-gfm';
 import './ArticleReader.css';
 
 const tg = window.Telegram?.WebApp;
-const BACKEND_URL = "https://n8n-karpix-miniapp-karpix-backeng.g44y6r.easypanel.host";
-
+const BACKEND_URL = "https://miniback.karpix.com";
 function ArticleReader() {
   const { articleId } = useParams(); // Получаем ID статьи из URL
   const [article, setArticle] = useState(null);
