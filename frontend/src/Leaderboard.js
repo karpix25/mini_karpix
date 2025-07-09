@@ -20,7 +20,7 @@ const UserRow = ({ user, period }) => {
     const initials = displayName.split(' ').map(word => word[0]).join('').substring(0, 2).toUpperCase();
     
     // Используем UI Avatars с инициалами
-    const avatarUrl = user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=4a90e2&color=fff&size=128&font-size=0.6`;
+    const avatarUrl = user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=4a90e2&color=fff&size=40&font-size=0.6`;
 
     return (
         <div className="user-row">
@@ -31,7 +31,7 @@ const UserRow = ({ user, period }) => {
                 className="avatar"
                 onError={(e) => {
                     // Если изображение не загрузилось, показываем запасной вариант
-                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=6c757d&color=fff&size=128`;
+                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=6c757d&color=fff&size=40`;
                 }}
             />
             <span className="user-name">{displayName}</span>
