@@ -20,9 +20,9 @@ app = FastAPI()
 
 # --- Настройка CORS ---
 origins = [
-    "https://minifront.karpix.com",
-    "https://n8n-karpix-miniapp-karpix.g44y6r.easypanel.host",
-    "http://localhost:3000",
+    "https://minifront.karpix.com",  # <-- Ваш фронтенд
+    "https://miniback.karpix.com",   # <-- Ваш бэкенд (на всякий случай)
+    "http://localhost:3000",       # <-- Для локальной разработки
 ]
 app.add_middleware(
     CORSMiddleware,
