@@ -1,0 +1,398 @@
+/* ===== ОСНОВНОЙ КОНТЕЙНЕР ===== */
+.lesson-reader-container {
+  min-height: 100vh;
+  background-color: var(--tg-theme-bg-color, #ffffff);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: var(--tg-theme-text-color, #333333);
+}
+
+/* ===== МОБИЛЬНАЯ НАВИГАЦИЯ ===== */
+.mobile-navigation {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--tg-theme-section-separator-color, #e9ecef);
+  background: var(--tg-theme-bg-color, #ffffff);
+}
+
+.back-to-course {
+  background: none;
+  border: none;
+  color: var(--tg-theme-link-color, #007bff);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.back-to-course:hover {
+  text-decoration: underline;
+}
+
+/* ===== ЗАГОЛОВОК УРОКА ===== */
+.lesson-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24px 20px 16px 20px;
+  gap: 16px;
+  background: var(--tg-theme-bg-color, #ffffff);
+}
+
+.lesson-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--tg-theme-text-color, #1a1a1a);
+  line-height: 1.3;
+  flex: 1;
+}
+
+/* ===== КНОПКА ЗАВЕРШЕНИЯ ===== */
+.complete-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.completion-circle {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--tg-theme-hint-color, #6c757d);
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.complete-button:hover .completion-circle {
+  border-color: var(--tg-theme-link-color, #007bff);
+}
+
+.completion-check {
+  width: 20px;
+  height: 20px;
+  background: #28a745;
+  border-radius: 50%;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== КОНТЕНТ УРОКА ===== */
+.lesson-content {
+  padding: 0 20px 32px 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.7;
+  color: var(--tg-theme-text-color, #333);
+}
+
+/* Стили для Markdown контента */
+.lesson-content h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 32px 0 16px 0;
+  color: var(--tg-theme-text-color, #1a1a1a);
+}
+
+.lesson-content h2 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 28px 0 14px 0;
+  color: var(--tg-theme-text-color, #1a1a1a);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lesson-content h2::before {
+  content: "✅";
+  font-size: 20px;
+}
+
+.lesson-content h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 24px 0 12px 0;
+  color: var(--tg-theme-text-color, #1a1a1a);
+}
+
+.lesson-content p {
+  margin: 16px 0;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.lesson-content ul {
+  margin: 16px 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.lesson-content ul li {
+  margin: 8px 0;
+  padding-left: 24px;
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.lesson-content ul li::before {
+  content: "•";
+  color: var(--tg-theme-text-color, #333);
+  font-weight: bold;
+  position: absolute;
+  left: 8px;
+}
+
+.lesson-content ol {
+  margin: 16px 0;
+  padding-left: 24px;
+}
+
+.lesson-content ol li {
+  margin: 8px 0;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.lesson-content strong {
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #1a1a1a);
+}
+
+.lesson-content code {
+  background: var(--tg-theme-section-separator-color, #f8f9fa);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 14px;
+}
+
+.lesson-content pre {
+  background: var(--tg-theme-section-separator-color, #f8f9fa);
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 20px 0;
+}
+
+.lesson-content pre code {
+  background: none;
+  padding: 0;
+}
+
+.lesson-content blockquote {
+  border-left: 4px solid var(--tg-theme-link-color, #007bff);
+  padding-left: 16px;
+  margin: 20px 0;
+  color: var(--tg-theme-hint-color, #6c757d);
+  font-style: italic;
+}
+
+/* ===== НАВИГАЦИЯ МЕЖДУ УРОКАМИ ===== */
+.lesson-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 20px 16px 20px;
+  border-top: 1px solid var(--tg-theme-section-separator-color, #e9ecef);
+  margin-top: 32px;
+  gap: 16px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.nav-button {
+  background: var(--tg-theme-button-color, #007bff);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  text-decoration: none;
+  display: inline-block;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-button:hover {
+  background: var(--tg-theme-button-color, #0056b3);
+}
+
+.nav-button.next {
+  margin-left: auto;
+}
+
+/* ===== ИНФОРМАЦИЯ О ПРОГРЕССЕ ===== */
+.lesson-progress-info {
+  text-align: center;
+  padding: 16px 20px 32px 20px;
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #6c757d);
+}
+
+/* ===== СОСТОЯНИЯ ЗАГРУЗКИ И ОШИБОК ===== */
+.loading-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.loading-state {
+  font-size: 18px;
+  color: var(--tg-theme-hint-color, #6c757d);
+}
+
+.error-state h2 {
+  margin: 0 0 12px 0;
+  font-size: 24px;
+  color: var(--tg-theme-destructive-text-color, #dc3545);
+}
+
+.error-state p {
+  margin: 0 0 24px 0;
+  font-size: 16px;
+  color: var(--tg-theme-hint-color, #6c757d);
+}
+
+.back-button {
+  background: var(--tg-theme-button-color, #007bff);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.back-button:hover {
+  background: var(--tg-theme-button-color, #0056b3);
+}
+
+/* ===== АДАПТИВНОСТЬ ===== */
+
+/* Планшеты и десктопы */
+@media (min-width: 768px) {
+  .mobile-navigation {
+    display: none; /* Скрываем на больших экранах */
+  }
+  
+  .lesson-header {
+    padding: 32px 32px 24px 32px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .lesson-title {
+    font-size: 28px;
+  }
+  
+  .lesson-content {
+    padding: 0 32px 40px 32px;
+  }
+  
+  .lesson-navigation {
+    padding: 32px 32px 24px 32px;
+  }
+  
+  .lesson-progress-info {
+    padding: 16px 32px 40px 32px;
+  }
+}
+
+/* Большие экраны */
+@media (min-width: 1200px) {
+  .lesson-header {
+    padding: 40px 48px 32px 48px;
+  }
+  
+  .lesson-content {
+    padding: 0 48px 48px 48px;
+  }
+  
+  .lesson-navigation {
+    padding: 40px 48px 32px 48px;
+  }
+  
+  .lesson-progress-info {
+    padding: 16px 48px 48px 48px;
+  }
+}
+
+/* Мобильные устройства */
+@media (max-width: 767px) {
+  .lesson-title {
+    font-size: 20px;
+  }
+  
+  .lesson-header {
+    padding: 20px 16px 16px 16px;
+  }
+  
+  .lesson-content {
+    padding: 0 16px 24px 16px;
+  }
+  
+  .lesson-navigation {
+    padding: 20px 16px 16px 16px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .nav-button {
+    width: 100%;
+    text-align: center;
+    margin: 0 0 8px 0;
+    max-width: none;
+  }
+  
+  .nav-button.next {
+    margin-left: 0;
+  }
+  
+  .mobile-navigation {
+    padding: 12px 16px;
+  }
+  
+  .lesson-progress-info {
+    padding: 16px 16px 24px 16px;
+  }
+}
+
+/* Анимации */
+.lesson-reader-container {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
