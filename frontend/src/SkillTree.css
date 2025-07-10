@@ -149,9 +149,6 @@
   position: relative;
 }
 
-/* УБИРАЕМ АНИМАЦИЮ ПУЛЬСАЦИИ */
-}
-
 /* ===== УЗЛЫ НАВЫКОВ ===== */
 .skill-node {
   position: absolute;
@@ -211,9 +208,6 @@
   -webkit-box-orient: vertical;
 }
 
-/* УБИРАЕМ АНИМАЦИЮ СИЯНИЯ */
-}
-
 /* ===== НАЗВАНИЯ ВЕТОК ===== */
 .branch-labels {
   pointer-events: none;
@@ -227,12 +221,8 @@
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
   white-space: nowrap;
   filter: drop-shadow(0 0 10px currentColor);
-  animation: labelGlow 4s ease-in-out infinite;
+  /* УБИРАЕМ АНИМАЦИЮ для производительности */
 }
-
-@keyframes labelGlow {
-  0%, 100% { filter: drop-shadow(0 0 5px currentColor); }
-  50% { filter: drop-shadow(0 0 15px currentColor); }
 }
 
 /* ===== ЭЛЕМЕНТЫ УПРАВЛЕНИЯ ===== */
