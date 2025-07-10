@@ -54,6 +54,42 @@ class RankInfo(BaseModel):
     min_points: int
     is_unlocked: bool
 
+# НОВЫЕ МОДЕЛИ ДЛЯ КУРСОВ
+class LessonInfo(BaseModel):
+    id: str
+    title: str
+    completed: Optional[bool] = False
+
+class SectionInfo(BaseModel):
+    id: str
+    title: str
+    lessons: List[LessonInfo]
+
+class CourseInfo(BaseModel):
+    id: str
+    title: str
+    description: str
+    rank_required: int
+    progress: int
+    total_lessons: int
+    completed_lessons: int
+
+class CourseDetail(BaseModel):
+    id: str
+    title: str
+    description: str
+    rank_required: int
+    sections: List[SectionInfo]
+    progress: int
+
+class LessonContent(BaseModel):
+    id: str
+    title: str
+    content: str
+    course_id: str
+    section_id: str
+
+# СТАРЫЕ МОДЕЛИ (для обратной совместимости)
 class ArticleInfo(BaseModel): 
     id: str
     title: str
@@ -63,7 +99,7 @@ class ArticleContent(BaseModel):
     id: str
     content: str
 
-# ОБНОВЛЕННЫЕ МОДЕЛИ ДЛЯ ЛИДЕРБОРДА С НОВЫМИ ПОЛЯМИ
+# МОДЕЛИ ЛИДЕРБОРДА
 class LeaderboardUserRow(BaseModel):
     rank: int
     user_id: int
@@ -101,6 +137,13 @@ def get_rank(points: int) -> str:
             return rank.name
     return current_rank
 
+def get_rank_level(points: int) -> int:
+    """Возвращает уровень ранга (1-4)"""
+    for i, rank in enumerate(reversed(RANKS)):
+        if points >= rank.min_points:
+            return len(RANKS) - i
+    return 1
+
 # --- Утилиты ---
 def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
@@ -128,7 +171,330 @@ async def get_current_user(x_init_data: str = Header(None)):
         raise HTTPException(status_code=401, detail="Invalid InitData")
     return user_data
 
-# --- ОБНОВЛЕННЫЙ ЭНДПОИНТ ЛИДЕРБОРДА ---
+# --- НОВЫЕ ФУНКЦИИ ДЛЯ РАБОТЫ С КУРСАМИ ---
+
+def load_course_metadata(course_path: str) -> dict:
+    """Загружает метаданные курса из course.json"""
+    metadata_file = os.path.join(course_path, "course.json")
+    if os.path.exists(metadata_file):
+        try:
+            with open(metadata_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"ERROR: Failed to load course.json from {metadata_file}: {e}")
+    
+    # Fallback для старых статей
+    course_id = os.path.basename(course_path)
+    return {
+        "title": f"Курс {course_id}",
+        "description": "Описание курса",
+        "rank_required": 1,
+        "sections": [
+            {
+                "id": "main",
+                "title": "Основной раздел", 
+                "lessons": []
+            }
+        ]
+    }
+
+def scan_course_lessons(course_path: str, sections: list) -> list:
+    """Сканирует уроки в курсе и обновляет секции"""
+    updated_sections = []
+    
+    for section in sections:
+        section_path = os.path.join(course_path, section["id"])
+        lessons = []
+        
+        if os.path.exists(section_path):
+            # Ищем .md файлы в папке секции
+            for md_file in glob.glob(os.path.join(section_path, "*.md")):
+                lesson_id = os.path.splitext(os.path.basename(md_file))[0]
+                
+                # Читаем заголовок из первой строки
+                try:
+                    with open(md_file, 'r', encoding='utf-8') as f:
+                        first_line = f.readline().strip()
+                        title = first_line.lstrip('#').strip() if first_line.startswith('#') else lesson_id
+                except Exception as e:
+                    print(f"ERROR: Failed to read {md_file}: {e}")
+                    title = lesson_id
+                
+                lessons.append({
+                    "id": lesson_id,
+                    "title": title
+                })
+        
+        updated_sections.append({
+            "id": section["id"],
+            "title": section["title"],
+            "lessons": lessons
+        })
+    
+    return updated_sections
+
+# --- НОВЫЕ ЭНДПОИНТЫ ДЛЯ КУРСОВ ---
+
+@app.get("/api/courses", response_model=List[CourseInfo])
+async def get_courses(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
+    """Получить список всех доступных курсов"""
+    user_id = user.get("id")
+    print(f"DEBUG: Getting courses for user {user_id}")
+    
+    # Получаем данные пользователя
+    cur = db.cursor()
+    cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
+    db_user = cur.fetchone()
+    cur.close()
+    
+    points = (db_user['message_count'] * 2) if db_user and db_user['message_count'] is not None else 0
+    user_rank_level = get_rank_level(points)
+    
+    print(f"DEBUG: User points: {points}, rank level: {user_rank_level}")
+    print(f"DEBUG: Content directory: {CONTENT_DIR}")
+    
+    courses = []
+    
+    # Проверяем существование папки content
+    if not os.path.exists(CONTENT_DIR):
+        print(f"ERROR: Content directory {CONTENT_DIR} does not exist")
+        return courses
+    
+    # Ищем папки курсов
+    try:
+        items = os.listdir(CONTENT_DIR)
+        print(f"DEBUG: Items in content directory: {items}")
+        
+        for item in items:
+            course_path = os.path.join(CONTENT_DIR, item)
+            print(f"DEBUG: Checking item: {item}, path: {course_path}")
+            
+            if os.path.isdir(course_path):
+                print(f"DEBUG: Found directory: {item}")
+                
+                # Загружаем метаданные курса
+                metadata = load_course_metadata(course_path)
+                print(f"DEBUG: Loaded metadata for {item}: {metadata}")
+                
+                # Проверяем доступ
+                course_rank_required = metadata.get("rank_required", 1)
+                print(f"DEBUG: Course {item} requires rank {course_rank_required}, user has level {user_rank_level}")
+                
+                if course_rank_required <= user_rank_level:
+                    # Подсчитываем уроки
+                    sections = scan_course_lessons(course_path, metadata.get("sections", []))
+                    total_lessons = sum(len(section["lessons"]) for section in sections)
+                    
+                    print(f"DEBUG: Course {item} has {total_lessons} lessons")
+                    
+                    courses.append(CourseInfo(
+                        id=item,
+                        title=metadata.get("title", item),
+                        description=metadata.get("description", ""),
+                        rank_required=metadata.get("rank_required", 1),
+                        progress=0,  # TODO: Добавить реальный прогресс
+                        total_lessons=total_lessons,
+                        completed_lessons=0  # TODO: Добавить реальный прогресс
+                    ))
+                else:
+                    print(f"DEBUG: Course {item} not accessible - rank {course_rank_required} > user level {user_rank_level}")
+    except Exception as e:
+        print(f"ERROR: Failed to scan courses: {e}")
+    
+    print(f"DEBUG: Returning {len(courses)} courses")
+    return courses
+
+@app.get("/api/courses/{course_id}", response_model=CourseDetail)
+async def get_course_detail(course_id: str, user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
+    """Получить детальную информацию о курсе"""
+    user_id = user.get("id")
+    course_path = os.path.join(CONTENT_DIR, course_id)
+    
+    print(f"DEBUG: Getting course detail for {course_id}, path: {course_path}")
+    
+    if not os.path.exists(course_path):
+        print(f"ERROR: Course path {course_path} does not exist")
+        raise HTTPException(status_code=404, detail="Курс не найден")
+    
+    # Проверяем доступ пользователя
+    cur = db.cursor()
+    cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
+    db_user = cur.fetchone()
+    cur.close()
+    
+    points = (db_user['message_count'] * 2) if db_user and db_user['message_count'] is not None else 0
+    user_rank_level = get_rank_level(points)
+    
+    # Загружаем метаданные
+    metadata = load_course_metadata(course_path)
+    
+    if metadata.get("rank_required", 1) > user_rank_level:
+        raise HTTPException(status_code=403, detail="Недостаточно прав для доступа к курсу")
+    
+    # Сканируем уроки
+    sections = scan_course_lessons(course_path, metadata.get("sections", []))
+    
+    return CourseDetail(
+        id=course_id,
+        title=metadata.get("title", course_id),
+        description=metadata.get("description", ""),
+        rank_required=metadata.get("rank_required", 1),
+        sections=sections,
+        progress=0  # TODO: Добавить реальный прогресс
+    )
+
+@app.get("/api/courses/{course_id}/lessons/{lesson_id}", response_model=LessonContent)
+async def get_lesson_content(course_id: str, lesson_id: str, user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
+    """Получить содержимое конкретного урока"""
+    user_id = user.get("id")
+    course_path = os.path.join(CONTENT_DIR, course_id)
+    
+    print(f"DEBUG: Getting lesson {lesson_id} from course {course_id}")
+    
+    if not os.path.exists(course_path):
+        raise HTTPException(status_code=404, detail="Курс не найден")
+    
+    # Проверяем доступ
+    cur = db.cursor()
+    cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
+    db_user = cur.fetchone()
+    cur.close()
+    
+    points = (db_user['message_count'] * 2) if db_user and db_user['message_count'] is not None else 0
+    user_rank_level = get_rank_level(points)
+    
+    metadata = load_course_metadata(course_path)
+    if metadata.get("rank_required", 1) > user_rank_level:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    
+    # Ищем файл урока
+    lesson_file = None
+    section_id = None
+    
+    for section in metadata.get("sections", []):
+        section_path = os.path.join(course_path, section["id"])
+        potential_file = os.path.join(section_path, f"{lesson_id}.md")
+        
+        if os.path.exists(potential_file):
+            lesson_file = potential_file
+            section_id = section["id"]
+            break
+    
+    if not lesson_file:
+        raise HTTPException(status_code=404, detail="Урок не найден")
+    
+    # Читаем содержимое
+    try:
+        with open(lesson_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+            # Извлекаем заголовок из первой строки
+            lines = content.split('\n')
+            title = lines[0].lstrip('#').strip() if lines and lines[0].startswith('#') else lesson_id
+    except Exception as e:
+        print(f"ERROR: Failed to read lesson file {lesson_file}: {e}")
+        raise HTTPException(status_code=500, detail="Ошибка чтения файла урока")
+    
+    return LessonContent(
+        id=lesson_id,
+        title=title,
+        content=content,
+        course_id=course_id,
+        section_id=section_id
+    )
+
+# --- СТАРЫЕ ЭНДПОИНТЫ (для обратной совместимости) ---
+
+@app.get("/api/content", response_model=List[ArticleInfo])
+async def get_content_list_legacy(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
+    """Старый эндпоинт для обратной совместимости"""
+    user_id = user.get("id")
+    print(f"DEBUG: User ID: {user_id}")
+    
+    cur = db.cursor()
+    cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
+    db_user = cur.fetchone()
+    cur.close()
+    
+    points = (db_user['message_count'] * 2) if db_user and db_user['message_count'] is not None else 0
+    user_rank_level = get_rank_level(points)
+    
+    print(f"DEBUG: User points: {points}, rank level: {user_rank_level}")
+    
+    # Ищем старые .md файлы в корне
+    available_articles = []
+    search_path = os.path.join(CONTENT_DIR, "*.md")
+    print(f"DEBUG: Searching in: {search_path}")
+    
+    found_files = glob.glob(search_path)
+    print(f"DEBUG: Found files: {found_files}")
+    
+    for filepath in found_files:
+        filename = os.path.basename(filepath)
+        print(f"DEBUG: Processing file: {filename}")
+        try:
+            parts = filename.split('__')
+            if len(parts) >= 2:
+                rank_required = int(parts[0])
+                article_id = parts[1].replace('.md', '')
+                print(f"DEBUG: File requires rank {rank_required}, article_id: {article_id}")
+                
+                if rank_required <= user_rank_level:
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        title = f.readline().strip().lstrip('#').strip()
+                    print(f"DEBUG: Article accessible: {article_id} - {title}")
+                    available_articles.append(ArticleInfo(
+                        id=article_id, 
+                        title=title, 
+                        rank_required=rank_required
+                    ))
+                else:
+                    print(f"DEBUG: Article NOT accessible: rank {rank_required} > user level {user_rank_level}")
+        except (ValueError, IndexError) as e:
+            print(f"DEBUG: Error processing {filename}: {e}")
+            continue
+    
+    available_articles.sort(key=lambda x: x.rank_required)
+    print(f"DEBUG: Final articles list: {[a.id for a in available_articles]}")
+    return available_articles
+
+@app.get("/api/content/{article_id}", response_model=ArticleContent)
+async def get_article_legacy(article_id: str, user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
+    """Старый эндпоинт для обратной совместимости"""
+    user_id = user.get("id")
+    
+    cur = db.cursor()
+    cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
+    db_user = cur.fetchone()
+    cur.close()
+    
+    points = (db_user['message_count'] * 2) if db_user and db_user['message_count'] is not None else 0
+    user_rank_level = get_rank_level(points)
+    
+    # Ищем файл статьи
+    search_pattern = os.path.join(CONTENT_DIR, f"*__{article_id}.md")
+    found_files = glob.glob(search_pattern)
+    
+    if not found_files:
+        raise HTTPException(status_code=404, detail="Статья не найдена")
+    
+    found_path = found_files[0]
+    filename = os.path.basename(found_path)
+    
+    try: 
+        target_rank_required = int(filename.split('__')[0])
+    except (ValueError, IndexError): 
+        raise HTTPException(status_code=500, detail="Invalid file name")
+    
+    if user_rank_level < target_rank_required: 
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    
+    with open(found_path, 'r', encoding='utf-8') as f: 
+        content = f.read()
+    
+    return ArticleContent(id=article_id, content=content)
+
+# --- ОСТАЛЬНЫЕ ЭНДПОИНТЫ (лидерборд, профиль, ранги) ---
+
 @app.get("/api/leaderboard", response_model=LeaderboardResponse)
 async def get_leaderboard_by_period(
     period: Literal['7d', '30d', 'all'] = '7d',
@@ -137,11 +503,9 @@ async def get_leaderboard_by_period(
 ):
     current_user_id = user.get("id")
     
-    # Определяем временной интервал для SQL-запроса
     interval_map = {'7d': "INTERVAL '7 days'", '30d': "INTERVAL '30 days'"}
     date_filter_sql = f"WHERE m.message_date >= NOW() - {interval_map[period]}" if period in interval_map else ""
 
-    # SQL-запрос с новыми полями
     query = f"""
         WITH user_scores AS (
             SELECT
@@ -167,7 +531,6 @@ async def get_leaderboard_by_period(
         SELECT * FROM ranked_users;
     """
     
-    # Для режима 'all' используется данные из channel_subscribers
     if period == 'all':
         query = """
             SELECT
@@ -187,7 +550,6 @@ async def get_leaderboard_by_period(
     all_users = cur.fetchall()
     cur.close()
 
-    # Формируем список топ-20 пользователей с новыми полями
     top_users = [
         LeaderboardUserRow(
             rank=u['rank'],
@@ -200,7 +562,6 @@ async def get_leaderboard_by_period(
         ) for u in all_users[:20]
     ]
 
-    # Ищем данные о текущем пользователе
     current_user_data = None
     for u in all_users:
         if u['user_id'] == current_user_id:
@@ -217,7 +578,6 @@ async def get_leaderboard_by_period(
 
     return LeaderboardResponse(top_users=top_users, current_user=current_user_data)
 
-# --- ОБНОВЛЕННЫЙ ЭНДПОИНТ ПРОФИЛЯ ---
 @app.get("/api/me", response_model=UserData)
 async def get_me(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
     user_id = user.get("id")
@@ -256,90 +616,6 @@ async def get_me(user: dict = Depends(get_current_user), db=Depends(get_db_conne
         points_to_next_rank=points_to_next_rank, 
         progress_percentage=progress_percentage
     )
-
-@app.get("/api/content", response_model=List[ArticleInfo])
-async def get_content_list(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
-    user_id = user.get("id")
-    print(f"DEBUG: User ID: {user_id}")
-    
-    cur = db.cursor()
-    cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
-    db_user = cur.fetchone()
-    cur.close()
-    
-    points = (db_user['message_count'] * 2) if db_user and db_user['message_count'] is not None else 0
-    print(f"DEBUG: User points: {points}")
-    
-    user_rank_name = get_rank(points)
-    user_rank_level = 1
-    for i, rank_info in enumerate(RANKS):
-        if rank_info.name == user_rank_name: 
-            user_rank_level = i + 1
-            break
-    
-    print(f"DEBUG: User rank: {user_rank_name}, level: {user_rank_level}")
-    
-    available_articles = []
-    search_path = os.path.join(CONTENT_DIR, "*.md")
-    print(f"DEBUG: Searching in: {search_path}")
-    
-    found_files = glob.glob(search_path)
-    print(f"DEBUG: Found files: {found_files}")
-    
-    for filepath in found_files:
-        filename = os.path.basename(filepath)
-        print(f"DEBUG: Processing file: {filename}")
-        try:
-            parts = filename.split('__')
-            rank_required = int(parts[0])
-            article_id = parts[1].replace('.md', '')
-            print(f"DEBUG: File requires rank {rank_required}, article_id: {article_id}")
-            
-            if rank_required <= user_rank_level:
-                with open(filepath, 'r', encoding='utf-8') as f:
-                    title = f.readline().strip().lstrip('#').strip()
-                print(f"DEBUG: Article accessible: {article_id} - {title}")
-                available_articles.append(ArticleInfo(id=article_id, title=title, rank_required=rank_required))
-            else:
-                print(f"DEBUG: Article NOT accessible: rank {rank_required} > user level {user_rank_level}")
-        except (ValueError, IndexError) as e:
-            print(f"DEBUG: Error processing {filename}: {e}")
-            continue
-    
-    available_articles.sort(key=lambda x: x.rank_required)
-    print(f"DEBUG: Final articles list: {[a.id for a in available_articles]}")
-    return available_articles
-
-@app.get("/api/content/{article_id}", response_model=ArticleContent)
-async def get_article(article_id: str, user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
-    user_id = user.get("id")
-    cur = db.cursor()
-    cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
-    db_user = cur.fetchone()
-    cur.close()
-    points = (db_user['message_count'] * 2) if db_user and db_user['message_count'] is not None else 0
-    user_rank_name = get_rank(points)
-    user_rank_level = 1
-    for i, rank_info in enumerate(RANKS):
-        if rank_info.name == user_rank_name: 
-            user_rank_level = i + 1
-            break
-    search_pattern = os.path.join(CONTENT_DIR, f"*__{article_id}.md")
-    found_files = glob.glob(search_pattern)
-    if found_files:
-        found_path = found_files[0]
-        try: 
-            filename = os.path.basename(found_path)
-            target_rank_required = int(filename.split('__')[0])
-        except (ValueError, IndexError): 
-            raise HTTPException(status_code=500, detail="Invalid file name on server")
-    else: 
-        raise HTTPException(status_code=404, detail="Article not found")
-    if user_rank_level < target_rank_required: 
-        raise HTTPException(status_code=403, detail="You do not have high enough rank to view this content")
-    with open(found_path, 'r', encoding='utf-8') as f: 
-        content = f.read()
-    return ArticleContent(id=article_id, content=content)
 
 @app.get("/api/ranks", response_model=List[RankInfo])
 async def get_all_ranks(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
