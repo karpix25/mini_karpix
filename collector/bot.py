@@ -19,8 +19,6 @@ def setup_database():
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # <-- НАЧАЛО ИЗМЕНЕНИЙ: ИСПРАВЛЕН ПОРЯДОК СОЗДАНИЯ ТАБЛИЦ -->
-    
     # 1. Создание таблицы подписчиков с новыми колонками (ОНА ДОЛЖНА БЫТЬ ПЕРВОЙ)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS channel_subscribers (
@@ -61,13 +59,31 @@ def setup_database():
             PRIMARY KEY (user_id, course_id, lesson_id)
         );
     """)
+
+    # <-- НАЧАЛО ИЗМЕНЕНИЙ: ДОБАВЛЕНА ТАБЛИЦА ДЛЯ УРОКОВ -->
+    # 4. Создание таблицы для хранения уроков (для админки)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS lessons (
+            id SERIAL PRIMARY KEY,
+            course_id VARCHAR(100) NOT NULL,
+            section_id VARCHAR(100) NOT NULL,
+            lesson_slug VARCHAR(100) NOT NULL,
+            title VARCHAR(255) NOT NULL,
+            content TEXT,
+            sort_order INT DEFAULT 0,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE (course_id, lesson_slug)
+        );
+    """)
+    # <-- КОНЕЦ ИЗМЕНЕНИЙ -->
     
-    # 4. Создаем индекс для ускорения выборок по дате
+    # 5. Создаем индекс для ускорения выборок по дате
     cur.execute("""
         CREATE INDEX IF NOT EXISTS idx_messages_date_user_id ON messages (message_date, user_id);
     """)
     
-    # 5. Добавляем недостающие колонки в существующую таблицу (если они еще не добавлены)
+    # 6. Добавляем недостающие колонки в существующую таблицу (если они еще не добавлены)
     try:
         cur.execute("ALTER TABLE channel_subscribers ADD COLUMN IF NOT EXISTS last_name VARCHAR(255);")
         cur.execute("ALTER TABLE channel_subscribers ADD COLUMN IF NOT EXISTS photo_url VARCHAR(500);")
@@ -77,8 +93,6 @@ def setup_database():
     except Exception as e:
         logging.warning(f"Error adding columns (they might already exist): {e}")
         
-    # <-- КОНЕЦ ИЗМЕНЕНИЙ -->
-    
     conn.commit()
     cur.close()
     conn.close()
