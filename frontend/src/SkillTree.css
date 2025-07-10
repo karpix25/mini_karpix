@@ -439,3 +439,24 @@
   .skill-node {
     width: 90px;
     height: 90px;
+  }
+  
+  .skill-icon {
+    font-size: 26px;
+  }
+  
+  .skill-title {
+    font-size: 11px;
+    max-width: 80px;
+  }
+  
+  .branch-label {
+    font-size: 20px;
+  }
+  
+  .zoom-btn {
+    width: 55px;
+    height: 55px;
+    font-size: 26px;
+  }
+}
