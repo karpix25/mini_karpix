@@ -1,214 +1,289 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './SkillTree.css';
 
 const tg = window.Telegram?.WebApp;
 const BACKEND_URL = "https://miniback.karpix.com";
 
-// Конфигурация игрового дерева навыков
-const SKILL_TREE = {
-  center: {
-    id: 'player',
-    type: 'avatar'
+// Гибридная конфигурация дерева навыков
+const SKILL_TREE_CONFIG = {
+  logo: {
+    id: 'logo',
+    title: 'Karpix',
+    type: 'logo'
+  },
+  root: {
+    id: 'foundation',
+    title: 'Основа',
+    icon: '🏗️',
+    points: 0
   },
   branches: [
     {
       id: 'frontend',
       title: 'Frontend',
-      angle: 30,
+      icon: '🌐',
       color: '#4ECDC4',
       skills: [
-        { id: 'html', title: 'HTML', points: 0, distance: 120 },
-        { id: 'css', title: 'CSS', points: 20, distance: 180 },
-        { id: 'js', title: 'JavaScript', points: 50, distance: 240 },
-        { id: 'react', title: 'React', points: 100, distance: 300 },
-        { id: 'next', title: 'Next.js', points: 150, distance: 360 }
+        { id: 'html', title: 'HTML', icon: '📄', points: 0 },
+        { id: 'css', title: 'CSS', icon: '🎨', points: 20 },
+        { id: 'js', title: 'JavaScript', icon: '⚡', points: 50 },
+        { id: 'react', title: 'React', icon: '⚛️', points: 100 }
       ]
     },
     {
       id: 'backend',
       title: 'Backend',
-      angle: 120,
+      icon: '⚙️',
       color: '#45B7D1',
       skills: [
-        { id: 'python', title: 'Python', points: 10, distance: 120 },
-        { id: 'fastapi', title: 'FastAPI', points: 40, distance: 180 },
-        { id: 'database', title: 'Database', points: 80, distance: 240 },
-        { id: 'docker', title: 'Docker', points: 120, distance: 300 }
+        { id: 'python', title: 'Python', icon: '🐍', points: 10 },
+        { id: 'fastapi', title: 'FastAPI', icon: '🚀', points: 40 },
+        { id: 'database', title: 'Database', icon: '🗄️', points: 80 }
       ]
     },
     {
       id: 'design',
       title: 'Design',
-      angle: 210,
+      icon: '🎨',
       color: '#F7DC6F',
       skills: [
-        { id: 'figma', title: 'Figma', points: 15, distance: 120 },
-        { id: 'ui', title: 'UI Design', points: 60, distance: 180 },
-        { id: 'ux', title: 'UX Research', points: 110, distance: 240 }
+        { id: 'figma', title: 'Figma', icon: '🎭', points: 15 },
+        { id: 'ui', title: 'UI Design', icon: '📱', points: 60 }
       ]
     },
     {
       id: 'marketing',
       title: 'Marketing',
-      angle: 300,
+      icon: '📈',
       color: '#EC7063',
       skills: [
-        { id: 'seo', title: 'SEO', points: 25, distance: 120 },
-        { id: 'analytics', title: 'Analytics', points: 70, distance: 180 },
-        { id: 'ads', title: 'Ads', points: 130, distance: 240 }
+        { id: 'seo', title: 'SEO', icon: '🔍', points: 25 },
+        { id: 'analytics', title: 'Analytics', icon: '📊', points: 70 }
       ]
     }
   ]
 };
 
-// Компонент для звездного фона
-const StarField = () => {
-  const stars = Array.from({ length: 100 }, (_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    size: Math.random() * 2 + 1,
-    opacity: Math.random() * 0.8 + 0.2
-  }));
+// Автоматический расчет позиций (адаптивный алгоритм)
+const calculatePositions = (branches, scale = 1, viewportWidth, viewportHeight) => {
+  const positions = {
+    logo: { x: 50, y: 15 },
+    root: { x: 50, y: 35 },
+    branches: [],
+    skills: []
+  };
 
-  return (
-    <div className="star-field">
-      {stars.map(star => (
-        <div
-          key={star.id}
-          className="star"
-          style={{
-            left: `${star.x}%`,
-            top: `${star.y}%`,
-            width: `${star.size}px`,
-            height: `${star.size}px`,
-            opacity: star.opacity
-          }}
-        />
-      ))}
-    </div>
-  );
+  const baseDistance = Math.min(viewportWidth, viewportHeight) * 0.15 * scale;
+  const angleStep = 360 / branches.length;
+
+  branches.forEach((branch, branchIndex) => {
+    const angle = (angleStep * branchIndex) * (Math.PI / 180);
+    
+    // Позиция главного узла ветки
+    const branchX = 50 + (Math.cos(angle) * baseDistance * 0.8) / (viewportWidth / 100);
+    const branchY = 35 + (Math.sin(angle) * baseDistance * 0.8) / (viewportHeight / 100);
+    
+    positions.branches.push({
+      id: branch.id,
+      x: Math.max(10, Math.min(90, branchX)),
+      y: Math.max(20, Math.min(80, branchY)),
+      color: branch.color
+    });
+
+    // Позиции навыков в ветке
+    branch.skills.forEach((skill, skillIndex) => {
+      const skillDistance = baseDistance * (0.4 + skillIndex * 0.3);
+      const skillX = 50 + (Math.cos(angle) * skillDistance) / (viewportWidth / 100);
+      const skillY = 35 + (Math.sin(angle) * skillDistance) / (viewportHeight / 100);
+      
+      positions.skills.push({
+        ...skill,
+        branchId: branch.id,
+        x: Math.max(5, Math.min(95, skillX)),
+        y: Math.max(15, Math.min(85, skillY)),
+        color: branch.color,
+        index: skillIndex
+      });
+    });
+  });
+
+  return positions;
 };
 
-// Компонент навыка
-const SkillNode = ({ skill, branch, isUnlocked, transform, onClick }) => {
-  const angleRad = (branch.angle * Math.PI) / 180;
-  // МИКРОСКОП ЛОГИКА: расстояние тоже увеличивается при зуме
-  const scaledDistance = skill.distance * transform.scale;
-  const x = 50 + (Math.cos(angleRad) * scaledDistance) / 10;
-  const y = 50 + (Math.sin(angleRad) * scaledDistance) / 10;
+// Оптимизированный Canvas для соединений
+const ConnectionCanvas = React.memo(({ positions, dimensions, scale }) => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const { width, height } = dimensions;
+    
+    // Устанавливаем размеры
+    canvas.width = width * window.devicePixelRatio;
+    canvas.height = height * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    
+    // Очищаем
+    ctx.clearRect(0, 0, width, height);
+    
+    // Рисуем соединения от корня к веткам
+    positions.branches.forEach(branch => {
+      ctx.beginPath();
+      ctx.moveTo(
+        (positions.root.x * width) / 100,
+        (positions.root.y * height) / 100
+      );
+      ctx.lineTo(
+        (branch.x * width) / 100,
+        (branch.y * height) / 100
+      );
+      ctx.strokeStyle = branch.color;
+      ctx.lineWidth = Math.max(2, 4 * Math.min(scale, 1.5));
+      ctx.stroke();
+    });
+
+    // Рисуем соединения внутри веток
+    SKILL_TREE_CONFIG.branches.forEach(branchConfig => {
+      const branchPos = positions.branches.find(b => b.id === branchConfig.id);
+      if (!branchPos) return;
+
+      branchConfig.skills.forEach((skill, index) => {
+        const skillPos = positions.skills.find(s => s.id === skill.id);
+        if (!skillPos) return;
+
+        ctx.beginPath();
+        if (index === 0) {
+          // Соединение от ветки к первому навыку
+          ctx.moveTo(
+            (branchPos.x * width) / 100,
+            (branchPos.y * height) / 100
+          );
+        } else {
+          // Соединение между навыками
+          const prevSkill = positions.skills.find(s => 
+            s.branchId === branchConfig.id && s.index === index - 1
+          );
+          if (prevSkill) {
+            ctx.moveTo(
+              (prevSkill.x * width) / 100,
+              (prevSkill.y * height) / 100
+            );
+          }
+        }
+        
+        ctx.lineTo(
+          (skillPos.x * width) / 100,
+          (skillPos.y * height) / 100
+        );
+        ctx.strokeStyle = branchPos.color;
+        ctx.lineWidth = Math.max(1, 2 * Math.min(scale, 1.5));
+        ctx.globalAlpha = 0.7;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      });
+    });
+
+  }, [positions, dimensions, scale]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="connection-canvas"
+      style={{
+        width: dimensions.width,
+        height: dimensions.height,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        pointerEvents: 'none'
+      }}
+    />
+  );
+});
+
+// Компонент узла
+const TreeNode = React.memo(({ node, type, isUnlocked, onClick, scale }) => {
+  const nodeSize = type === 'logo' ? 60 : type === 'root' ? 80 : type === 'branch' ? 70 : 60;
+  const scaledSize = Math.max(40, nodeSize * Math.min(scale, 1.3));
 
   return (
     <div
-      className={`skill-node ${isUnlocked ? 'unlocked' : 'locked'}`}
+      className={`tree-node tree-node--${type} ${isUnlocked ? 'unlocked' : 'locked'}`}
       style={{
-        left: `${x}%`,
-        top: `${y}%`,
-        backgroundColor: isUnlocked ? branch.color : '#555',
-        borderColor: isUnlocked ? 'white' : '#666',
-        transform: `translate(-50%, -50%) scale(${Math.min(transform.scale, 1.5)})` // Ограничиваем размер узлов
+        left: `${node.x}%`,
+        top: `${node.y}%`,
+        width: `${scaledSize}px`,
+        height: `${scaledSize}px`,
+        backgroundColor: node.color || (type === 'logo' ? '#667eea' : type === 'root' ? '#8B4513' : '#555'),
+        transform: `translate(-50%, -50%)`,
+        zIndex: type === 'logo' ? 100 : type === 'root' ? 90 : type === 'branch' ? 80 : 70
       }}
-      onClick={() => isUnlocked && onClick(skill)}
-      title={`${skill.title} (${skill.points} очков)`}
+      onClick={() => isUnlocked && onClick?.(node)}
+      title={node.title}
     >
-      <div className="skill-icon">
-        {isUnlocked ? '⚡' : '🔒'}
+      <div className="node-icon">
+        {type === 'logo' ? '🏢' : node.icon || (isUnlocked ? '⚡' : '🔒')}
       </div>
-      <div className="skill-title">{skill.title}</div>
+      <div className="node-title">{node.title}</div>
     </div>
   );
-};
-
-// Компонент соединительной линии
-const ConnectionLine = ({ from, to, branch, transform }) => {
-  const fromAngle = (branch.angle * Math.PI) / 180;
-  const toAngle = (branch.angle * Math.PI) / 180;
-  
-  // МИКРОСКОП ЛОГИКА: расстояния линий тоже масштабируются
-  const fromDistance = from.distance * transform.scale;
-  const toDistance = to.distance * transform.scale;
-  
-  const fromX = 50 + (Math.cos(fromAngle) * fromDistance) / 10;
-  const fromY = 50 + (Math.sin(fromAngle) * fromDistance) / 10;
-  const toX = 50 + (Math.cos(toAngle) * toDistance) / 10;
-  const toY = 50 + (Math.sin(toAngle) * toDistance) / 10;
-
-  return (
-    <svg className="connection-svg">
-      <line
-        x1={`${fromX}%`}
-        y1={`${fromY}%`}
-        x2={`${toX}%`}
-        y2={`${toY}%`}
-        stroke={branch.color}
-        strokeWidth={Math.max(2, 3 * Math.min(transform.scale, 1.5))}
-        opacity={0.6}
-        className="connection-line"
-      />
-    </svg>
-  );
-};
-
-// Центральный аватар пользователя
-const PlayerAvatar = ({ user, transform }) => {
-  const getTelegramAvatarUrl = () => {
-    // Получаем аватар напрямую из Telegram WebApp
-    if (tg?.initDataUnsafe?.user?.photo_url) {
-      return tg.initDataUnsafe.user.photo_url;
-    }
-    
-    // Fallback на данные из API
-    if (user?.photo_url) {
-      return user.photo_url;
-    }
-    
-    // Генерируем аватар с инициалами
-    const firstName = user?.first_name || tg?.initDataUnsafe?.user?.first_name || 'User';
-    const initials = firstName.substring(0, 2).toUpperCase();
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=667eea&color=fff&size=200&font-size=0.6`;
-  };
-
-  return (
-    <div 
-      className="player-avatar"
-      style={{
-        transform: `translate(-50%, -50%) scale(${Math.min(transform.scale, 1.2)})` // Ограничиваем размер аватара
-      }}
-    >
-      <div className="avatar-ring" />
-      <img 
-        src={getTelegramAvatarUrl()} 
-        alt="Player"
-        className="avatar-image"
-        onError={(e) => {
-          const fallbackName = user?.first_name || 'U';
-          e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName)}&background=667eea&color=fff&size=200`;
-        }}
-      />
-    </div>
-  );
-};
+});
 
 function SkillTree() {
   const navigate = useNavigate();
   const containerRef = useRef(null);
-  
   const [user, setUser] = useState(null);
   const [userPoints, setUserPoints] = useState(0);
   const [loading, setLoading] = useState(true);
   
-  // Состояние для панорамирования и зума
-  const [transform, setTransform] = useState({
-    x: 0,
-    y: 0,
-    scale: 1
-  });
+  // Оптимизированное состояние
+  const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [positions, setPositions] = useState(null);
   
+  // Touch состояние
   const [isDragging, setIsDragging] = useState(false);
   const [lastTouch, setLastTouch] = useState({ x: 0, y: 0 });
   const [lastDistance, setLastDistance] = useState(0);
 
+  // Дебаунсированное обновление позиций
+  const updatePositions = useCallback(() => {
+    if (dimensions.width && dimensions.height) {
+      const newPositions = calculatePositions(
+        SKILL_TREE_CONFIG.branches,
+        transform.scale,
+        dimensions.width,
+        dimensions.height
+      );
+      setPositions(newPositions);
+    }
+  }, [dimensions, transform.scale]);
+
+  // Обновление размеров
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setDimensions({ width: rect.width, height: rect.height });
+      }
+    };
+
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
+
+  // Обновление позиций при изменении
+  useEffect(() => {
+    const timeoutId = setTimeout(updatePositions, 16); // 60fps throttle
+    return () => clearTimeout(timeoutId);
+  }, [updatePositions]);
+
+  // Загрузка данных пользователя
   useEffect(() => {
     const fetchUserData = async () => {
       if (!tg?.initData) {
@@ -236,37 +311,30 @@ function SkillTree() {
     fetchUserData();
   }, []);
 
-  // Вычисляем расстояние между двумя точками касания
+  // Вычисляем расстояние между касаниями
   const getDistance = (touch1, touch2) => {
     const dx = touch1.clientX - touch2.clientX;
     const dy = touch1.clientY - touch2.clientY;
     return Math.sqrt(dx * dx + dy * dy);
   };
 
-  // Обработка touch событий для панорамирования и pinch zoom
-  const handleTouchStart = (e) => {
+  // Оптимизированные touch события
+  const handleTouchStart = useCallback((e) => {
     e.preventDefault();
     
     if (e.touches.length === 1) {
-      // Одно касание - панорамирование
       setIsDragging(true);
-      setLastTouch({
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY
-      });
+      setLastTouch({ x: e.touches[0].clientX, y: e.touches[0].clientY });
     } else if (e.touches.length === 2) {
-      // Два касания - зум
       setIsDragging(false);
-      const distance = getDistance(e.touches[0], e.touches[1]);
-      setLastDistance(distance);
+      setLastDistance(getDistance(e.touches[0], e.touches[1]));
     }
-  };
+  }, []);
 
-  const handleTouchMove = (e) => {
+  const handleTouchMove = useCallback((e) => {
     e.preventDefault();
     
     if (e.touches.length === 1 && isDragging) {
-      // Панорамирование
       const deltaX = e.touches[0].clientX - lastTouch.x;
       const deltaY = e.touches[0].clientY - lastTouch.y;
       
@@ -276,55 +344,52 @@ function SkillTree() {
         y: prev.y + deltaY
       }));
       
-      setLastTouch({
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY
-      });
+      setLastTouch({ x: e.touches[0].clientX, y: e.touches[0].clientY });
     } else if (e.touches.length === 2) {
-      // Pinch zoom
       const distance = getDistance(e.touches[0], e.touches[1]);
       if (lastDistance > 0) {
         const scaleDelta = distance / lastDistance;
         setTransform(prev => ({
           ...prev,
-          scale: Math.max(0.5, Math.min(3, prev.scale * scaleDelta))
+          scale: Math.max(0.5, Math.min(2.5, prev.scale * scaleDelta))
         }));
       }
       setLastDistance(distance);
     }
-  };
+  }, [isDragging, lastTouch, lastDistance]);
 
-  const handleTouchEnd = (e) => {
-    if (e.touches.length === 0) {
-      setIsDragging(false);
-      setLastDistance(0);
-    }
-  };
+  const handleTouchEnd = useCallback(() => {
+    setIsDragging(false);
+    setLastDistance(0);
+  }, []);
 
-  // Обработка зума колесиком мыши (для десктопа)
-  const handleWheel = (e) => {
+  // Wheel zoom для десктопа
+  const handleWheel = useCallback((e) => {
     e.preventDefault();
-    const delta = -e.deltaY * 0.001;
+    const delta = -e.deltaY * 0.002;
     setTransform(prev => ({
       ...prev,
-      scale: Math.max(0.5, Math.min(3, prev.scale + delta))
+      scale: Math.max(0.5, Math.min(2.5, prev.scale + delta))
     }));
-  };
+  }, []);
 
-  const handleSkillClick = (skill) => {
-    console.log('Clicked skill:', skill);
-    // navigate(`/skill/${skill.id}`);
-  };
+  const handleNodeClick = useCallback((node) => {
+    console.log('Clicked node:', node);
+    // navigate(`/skill/${node.id}`);
+  }, []);
 
-  const isSkillUnlocked = (skill) => {
-    return userPoints >= skill.points;
-  };
+  const isNodeUnlocked = useCallback((node) => {
+    return userPoints >= (node.points || 0);
+  }, [userPoints]);
+
+  const resetView = useCallback(() => {
+    setTransform({ x: 0, y: 0, scale: 1 });
+  }, []);
 
   if (loading) {
     return (
-      <div className="skill-tree-game">
-        <StarField />
-        <div className="loading-game">
+      <div className="skill-tree-hybrid">
+        <div className="loading-container">
           <div className="loading-spinner" />
           <p>Загружается дерево навыков...</p>
         </div>
@@ -332,140 +397,85 @@ function SkillTree() {
     );
   }
 
+  if (!positions) {
+    return <div className="skill-tree-hybrid">Инициализация...</div>;
+  }
+
   return (
-    <div className="skill-tree-game">
-      <StarField />
-      
-      <div className="game-ui">
-        <div className="player-stats">
-          <div className="stats-item">
-            <span className="stats-icon">⚡</span>
-            <span>{userPoints} очков</span>
-          </div>
-          <div className="stats-item">
-            <span className="stats-icon">🏆</span>
-            <span>{user?.rank || 'Новичок'}</span>
-          </div>
+    <div className="skill-tree-hybrid">
+      {/* Фиксированный UI */}
+      <div className="fixed-ui">
+        <div className="user-stats">
+          <span>⚡ {userPoints} очков</span>
+          <span>🏆 {user?.rank || 'Новичок'}</span>
+        </div>
+        
+        <div className="zoom-controls">
+          <button onClick={() => setTransform(prev => ({ ...prev, scale: Math.min(2.5, prev.scale + 0.3) }))}>+</button>
+          <button onClick={() => setTransform(prev => ({ ...prev, scale: Math.max(0.5, prev.scale - 0.3) }))}>−</button>
+          <button onClick={resetView}>⌂</button>
         </div>
       </div>
 
+      {/* Основной контейнер */}
       <div 
         ref={containerRef}
-        className="skill-tree-canvas"
+        className="tree-container"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onWheel={handleWheel}
         style={{
-          transform: `translate(${transform.x}px, ${transform.y}px)`
+          transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`
         }}
       >
-        {/* Соединительные линии */}
-        <div className="connections-layer">
-          {SKILL_TREE.branches.map(branch => 
-            branch.skills.map((skill, index) => {
-              if (index === 0) {
-                // Соединение от центра к первому навыку
-                const angle = (branch.angle * Math.PI) / 180;
-                const scaledDistance = skill.distance * transform.scale;
-                const endX = 50 + (Math.cos(angle) * scaledDistance) / 10;
-                const endY = 50 + (Math.sin(angle) * scaledDistance) / 10;
-                
-                return (
-                  <svg key={`${branch.id}-center`} className="connection-svg">
-                    <line
-                      x1="50%"
-                      y1="50%"
-                      x2={`${endX}%`}
-                      y2={`${endY}%`}
-                      stroke={branch.color}
-                      strokeWidth={Math.max(3, 4 * Math.min(transform.scale, 1.5))}
-                      opacity={0.8}
-                      className="connection-line main-branch"
-                    />
-                  </svg>
-                );
-              } else {
-                // Соединения между навыками
-                return (
-                  <ConnectionLine
-                    key={`${branch.id}-${index}`}
-                    from={branch.skills[index - 1]}
-                    to={skill}
-                    branch={branch}
-                    transform={transform}
-                  />
-                );
-              }
-            })
-          )}
-        </div>
+        {/* Canvas для соединений */}
+        <ConnectionCanvas 
+          positions={positions} 
+          dimensions={dimensions} 
+          scale={transform.scale} 
+        />
 
-        {/* Центральный аватар */}
-        <PlayerAvatar user={user} transform={transform} />
+        {/* Логотип */}
+        <TreeNode
+          node={SKILL_TREE_CONFIG.logo}
+          type="logo"
+          isUnlocked={true}
+          scale={transform.scale}
+        />
+
+        {/* Корневой узел */}
+        <TreeNode
+          node={{ ...SKILL_TREE_CONFIG.root, ...positions.root }}
+          type="root"
+          isUnlocked={isNodeUnlocked(SKILL_TREE_CONFIG.root)}
+          onClick={handleNodeClick}
+          scale={transform.scale}
+        />
+
+        {/* Ветки */}
+        {positions.branches.map((branch, index) => (
+          <TreeNode
+            key={branch.id}
+            node={{ ...SKILL_TREE_CONFIG.branches[index], ...branch }}
+            type="branch"
+            isUnlocked={isNodeUnlocked(SKILL_TREE_CONFIG.branches[index])}
+            onClick={handleNodeClick}
+            scale={transform.scale}
+          />
+        ))}
 
         {/* Навыки */}
-        <div className="skills-layer">
-          {SKILL_TREE.branches.map(branch =>
-            branch.skills.map(skill => (
-              <SkillNode
-                key={skill.id}
-                skill={skill}
-                branch={branch}
-                isUnlocked={isSkillUnlocked(skill)}
-                transform={transform}
-                onClick={handleSkillClick}
-              />
-            ))
-          )}
-        </div>
-
-        {/* Названия веток */}
-        <div className="branch-labels">
-          {SKILL_TREE.branches.map(branch => {
-            const angle = (branch.angle * Math.PI) / 180;
-            const labelDistance = 80 * transform.scale; // Масштабируем расстояние
-            const x = 50 + (Math.cos(angle) * labelDistance) / 10;
-            const y = 50 + (Math.sin(angle) * labelDistance) / 10;
-            
-            return (
-              <div
-                key={branch.id}
-                className="branch-label"
-                style={{
-                  left: `${x}%`,
-                  top: `${y}%`,
-                  color: branch.color,
-                  transform: `translate(-50%, -50%) scale(${Math.min(transform.scale, 1.3)})`
-                }}
-              >
-                {branch.title}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Элементы управления */}
-      <div className="zoom-controls">
-        <button 
-          className="zoom-btn"
-          onClick={() => setTransform(prev => ({ ...prev, scale: Math.min(3, prev.scale + 0.3) }))}
-        >
-          +
-        </button>
-        <button 
-          className="zoom-btn"
-          onClick={() => setTransform(prev => ({ ...prev, scale: Math.max(0.5, prev.scale - 0.3) }))}
-        >
-          −
-        </button>
-        <button 
-          className="zoom-btn reset"
-          onClick={() => setTransform({ x: 0, y: 0, scale: 1 })}
-        >
-          ⌂
-        </button>
+        {positions.skills.map(skill => (
+          <TreeNode
+            key={skill.id}
+            node={skill}
+            type="skill"
+            isUnlocked={isNodeUnlocked(skill)}
+            onClick={handleNodeClick}
+            scale={transform.scale}
+          />
+        ))}
       </div>
     </div>
   );
