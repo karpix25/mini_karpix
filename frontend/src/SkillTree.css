@@ -1,5 +1,5 @@
-/* ===== ГИБРИДНОЕ ДЕРЕВО НАВЫКОВ ===== */
-.skill-tree-hybrid {
+/* ===== ПРОСТОЕ ДЕРЕВО НАВЫКОВ ===== */
+.skill-tree-simple {
   position: relative;
   width: 100vw;
   height: 100vh;
@@ -8,13 +8,6 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   user-select: none;
   -webkit-user-select: none;
-  /* ИСПРАВЛЯЕМ ЗУМА ИНТЕРФЕЙСА */
-  touch-action: none;
-}
-
-/* Фиксируем viewport для предотвращения зума интерфейса */
-.skill-tree-hybrid * {
-  touch-action: manipulation;
 }
 
 /* ===== ФИКСИРОВАННЫЙ UI ===== */
@@ -70,30 +63,30 @@
   justify-content: center;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  /* УБИРАЕМ TRANSITION для производительности */
+  transition: transform 0.1s ease;
 }
 
 .zoom-controls button:active {
   transform: scale(0.95);
 }
 
-/* ===== ОСНОВНОЙ КОНТЕЙНЕР ===== */
+/* ===== КОНТЕЙНЕР ДЕРЕВА ===== */
 .tree-container {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  transform-origin: center center;
-  will-change: transform;
-  /* НИКАКИХ TRANSITION - только мгновенные обновления */
+  transition: transform 0.3s ease;
 }
 
-/* ===== CANVAS ДЛЯ СОЕДИНЕНИЙ ===== */
-.connection-canvas {
+/* ===== СОЕДИНИТЕЛЬНЫЕ ЛИНИИ ===== */
+.connection-svg {
   position: absolute;
   top: 0;
   left: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 1;
 }
@@ -111,10 +104,7 @@
   font-weight: 600;
   text-align: center;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-  /* УБИРАЕМ ВСЕ TRANSITION для максимальной производительности */
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  transform-style: preserve-3d;
+  transition: transform 0.2s ease;
 }
 
 /* Типы узлов */
@@ -150,6 +140,17 @@
   border-color: #666;
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+/* Hover эффекты только для десктопа */
+@media (hover: hover) {
+  .tree-node:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  
+  .tree-node--skill.locked:hover {
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 /* Элементы узла */
@@ -199,7 +200,7 @@
   font-weight: 500;
 }
 
-/* ===== ОПТИМИЗАЦИЯ ДЛЯ МОБИЛЬНЫХ ===== */
+/* ===== АДАПТИВНОСТЬ ===== */
 @media (max-width: 768px) {
   .user-stats {
     top: 15px;
@@ -226,6 +227,27 @@
   
   .node-title {
     font-size: 9px;
+  }
+  
+  /* Увеличиваем узлы на мобильных для лучшего тапинга */
+  .tree-node--logo {
+    min-width: 60px;
+    min-height: 60px;
+  }
+  
+  .tree-node--root {
+    min-width: 70px;
+    min-height: 70px;
+  }
+  
+  .tree-node--branch {
+    min-width: 55px;
+    min-height: 55px;
+  }
+  
+  .tree-node--skill {
+    min-width: 45px;
+    min-height: 45px;
   }
 }
 
@@ -259,33 +281,14 @@
 }
 
 /* ===== ДОПОЛНИТЕЛЬНАЯ ОПТИМИЗАЦИЯ ===== */
-
-/* Принудительное использование GPU */
-.tree-node,
-.tree-container,
-.connection-canvas {
+.tree-node {
   will-change: transform;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
 }
 
-/* Отключаем сглаживание для лучшей производительности */
-.connection-canvas {
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-}
-
-/* Убираем любые hover эффекты на мобильных */
-@media (hover: none) {
-  .tree-node:hover {
-    /* НЕТ hover эффектов на touch устройствах */
-  }
-}
-
-/* Hover только для десктопа */
-@media (hover: hover) {
-  .tree-node:hover {
-    opacity: 0.9;
-  }
+.tree-container {
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
