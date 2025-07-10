@@ -1,0 +1,551 @@
+/* ===== ОСНОВНОЙ КОНТЕЙНЕР ===== */
+.lesson-reader-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--tg-theme-secondary-bg-color, #f8f9fa);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ===== OVERLAY ДЛЯ МОБИЛЬНОГО SIDEBAR ===== */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+/* ===== ЛЕВЫЙ SIDEBAR ===== */
+.lesson-sidebar {
+  width: 320px;
+  background: var(--tg-theme-bg-color, #ffffff);
+  border-right: 1px solid var(--tg-theme-secondary-bg-color, #e9ecef);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #e9ecef);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.course-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #1a1a1a);
+  line-height: 1.3;
+}
+
+.sidebar-close {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--tg-theme-hint-color, #6c757d);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+/* ===== РАЗДЕЛЫ В SIDEBAR ===== */
+.sidebar-section {
+  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #e9ecef);
+}
+
+.sidebar-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  user-select: none;
+}
+
+.sidebar-section-header:hover {
+  background-color: var(--tg-theme-secondary-bg-color, #f8f9fa);
+}
+
+.sidebar-section-header .section-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-section-header .section-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.sidebar-section-header .section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #1a1a1a);
+}
+
+.sidebar-section-header .toggle-arrow {
+  font-size: 10px;
+  color: var(--tg-theme-hint-color, #6c757d);
+  transition: transform 0.2s ease;
+}
+
+.sidebar-section-header .toggle-arrow.expanded {
+  transform: rotate(180deg);
+}
+
+/* ===== УРОКИ В SIDEBAR ===== */
+.sidebar-lessons {
+  background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+  animation: slideDown 0.2s ease-out;
+}
+
+.sidebar-lesson {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px 12px 48px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-lesson:last-child {
+  border-bottom: none;
+}
+
+.sidebar-lesson:hover:not(.locked) {
+  background-color: var(--tg-theme-bg-color, #ffffff);
+}
+
+.sidebar-lesson.active {
+  background: linear-gradient(90deg, var(--tg-theme-link-color, #007bff) 0%, rgba(0, 123, 255, 0.1) 100%);
+  border-left: 3px solid var(--tg-theme-link-color, #007bff);
+}
+
+.sidebar-lesson.locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sidebar-lesson.completed {
+  background: linear-gradient(90deg, rgba(40, 167, 69, 0.1) 0%, transparent 100%);
+}
+
+.sidebar-lesson .lesson-icon {
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
+}
+
+.sidebar-lesson .lesson-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-lesson .lesson-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tg-theme-text-color, #1a1a1a);
+  line-height: 1.3;
+  margin-bottom: 2px;
+}
+
+.sidebar-lesson.locked .lesson-title {
+  color: var(--tg-theme-hint-color, #6c757d);
+}
+
+.sidebar-lesson .lesson-duration {
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #6c757d);
+}
+
+/* ===== ОСНОВНОЙ КОНТЕНТ ===== */
+.lesson-main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--tg-theme-bg-color, #ffffff);
+}
+
+/* ===== МОБИЛЬНАЯ НАВИГАЦИЯ ===== */
+.mobile-navigation {
+  display: none;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--tg-theme-bg-color, #ffffff);
+  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #e9ecef);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.sidebar-toggle,
+.back-to-course {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--tg-theme-link-color, #007bff);
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  font-weight: 500;
+}
+
+/* ===== ЗАГОЛОВОК УРОКА ===== */
+.lesson-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 32px 40px 24px;
+  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #e9ecef);
+}
+
+.lesson-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--tg-theme-text-color, #1a1a1a);
+  line-height: 1.3;
+  flex: 1;
+  margin-right: 20px;
+}
+
+.complete-button {
+  background: none;
+  border: 2px solid var(--tg-theme-secondary-bg-color, #e9ecef);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.complete-button:hover {
+  border-color: var(--tg-theme-link-color, #007bff);
+}
+
+.complete-button.completed {
+  background: var(--tg-theme-link-color, #007bff);
+  border-color: var(--tg-theme-link-color, #007bff);
+}
+
+.completion-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--tg-theme-secondary-bg-color, #e9ecef);
+}
+
+.completion-check {
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* ===== КОНТЕНТ УРОКА ===== */
+.lesson-content {
+  flex: 1;
+  padding: 32px 40px;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.lesson-content h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--tg-theme-text-color, #1a1a1a);
+  margin: 0 0 24px 0;
+  line-height: 1.2;
+}
+
+.lesson-content h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #1a1a1a);
+  margin: 32px 0 16px 0;
+  line-height: 1.3;
+}
+
+.lesson-content h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #1a1a1a);
+  margin: 24px 0 12px 0;
+  line-height: 1.4;
+}
+
+.lesson-content p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--tg-theme-text-color, #333);
+  margin: 0 0 16px 0;
+}
+
+.lesson-content ul,
+.lesson-content ol {
+  margin: 16px 0;
+  padding-left: 24px;
+}
+
+.lesson-content li {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--tg-theme-text-color, #333);
+  margin: 8px 0;
+}
+
+.lesson-content code {
+  background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+}
+
+.lesson-content pre {
+  background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 16px 0;
+}
+
+.lesson-content pre code {
+  background: none;
+  padding: 0;
+}
+
+.lesson-content blockquote {
+  border-left: 4px solid var(--tg-theme-link-color, #007bff);
+  padding: 16px 20px;
+  margin: 16px 0;
+  background: rgba(0, 123, 255, 0.05);
+  border-radius: 0 8px 8px 0;
+}
+
+/* ===== НАВИГАЦИЯ МЕЖДУ УРОКАМИ ===== */
+.lesson-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32px 40px;
+  border-top: 1px solid var(--tg-theme-secondary-bg-color, #e9ecef);
+  background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+}
+
+.nav-button {
+  background: var(--tg-theme-button-color, #007bff);
+  color: var(--tg-theme-button-text-color, #ffffff);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.nav-button.prev {
+  margin-right: auto;
+}
+
+.nav-button.next {
+  margin-left: auto;
+}
+
+/* ===== СОСТОЯНИЯ ЗАГРУЗКИ И ОШИБКИ ===== */
+.loading-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--tg-theme-secondary-bg-color, #e9ecef);
+  border-top: 3px solid var(--tg-theme-link-color, #007bff);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-state p {
+  margin: 0;
+  font-size: 16px;
+  color: var(--tg-theme-hint-color, #6c757d);
+}
+
+.error-state h2 {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  color: var(--tg-theme-text-color, #1a1a1a);
+}
+
+.back-button {
+  background: var(--tg-theme-button-color, #007bff);
+  color: var(--tg-theme-button-text-color, #ffffff);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.back-button:hover {
+  opacity: 0.9;
+}
+
+/* ===== АДАПТИВНОСТЬ ===== */
+@media (max-width: 1024px) {
+  .lesson-sidebar {
+    position: fixed;
+    top: 0;
+    left: -320px;
+    z-index: 1000;
+    transition: left 0.3s ease;
+    height: 100vh;
+  }
+  
+  .lesson-sidebar.open {
+    left: 0;
+  }
+  
+  .sidebar-overlay {
+    display: block;
+  }
+  
+  .sidebar-close {
+    display: block;
+  }
+  
+  .mobile-navigation {
+    display: flex;
+  }
+  
+  .lesson-main-content {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .lesson-header {
+    padding: 24px 20px 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .lesson-title {
+    font-size: 24px;
+    margin-right: 0;
+  }
+  
+  .complete-button {
+    width: 40px;
+    height: 40px;
+    align-self: flex-end;
+  }
+  
+  .lesson-content {
+    padding: 24px 20px;
+  }
+  
+  .lesson-content h1 {
+    font-size: 28px;
+  }
+  
+  .lesson-content h2 {
+    font-size: 22px;
+  }
+  
+  .lesson-content h3 {
+    font-size: 18px;
+  }
+  
+  .lesson-navigation {
+    padding: 24px 20px;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .nav-button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .nav-button.prev,
+  .nav-button.next {
+    margin: 0;
+  }
+  
+  .mobile-navigation {
+    padding: 12px 16px;
+  }
+}
+
+/* ===== АНИМАЦИИ ===== */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+.lesson-content {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
