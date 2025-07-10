@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import './Content.css'; // Создадим этот файл
+import './Content.css';
 
 const tg = window.Telegram?.WebApp;
 const BACKEND_URL = "https://miniback.karpix.com";
@@ -32,7 +32,7 @@ const CourseCard = ({ article, progress = 0 }) => {
   const status = getStatusBadge(article.rank_required);
 
   return (
-    <Link to={`/article/${article.id}`} className="course-card-link">
+    <Link to={`/course/${article.id}`} className="course-card-link">
       <div className="course-card">
         {/* Превью изображение */}
         <div 
