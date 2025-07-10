@@ -19,7 +19,9 @@ def setup_database():
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # Создание таблицы подписчиков с новыми колонками
+    # <-- НАЧАЛО ИЗМЕНЕНИЙ: ИСПРАВЛЕН ПОРЯДОК СОЗДАНИЯ ТАБЛИЦ -->
+    
+    # 1. Создание таблицы подписчиков с новыми колонками (ОНА ДОЛЖНА БЫТЬ ПЕРВОЙ)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS channel_subscribers (
             telegram_id BIGINT PRIMARY KEY,
@@ -37,7 +39,7 @@ def setup_database():
         );
     """)
     
-    # Создание таблицы сообщений
+    # 2. Создание таблицы сообщений
     cur.execute("""
         CREATE TABLE IF NOT EXISTS messages (
             id SERIAL PRIMARY KEY,
@@ -48,8 +50,7 @@ def setup_database():
         );
     """)
     
-    # <-- НАЧАЛО ИЗМЕНЕНИЙ -->
-    # Создание таблицы прогресса по урокам
+    # 3. Создание таблицы прогресса по урокам (ОНА ССЫЛАЕТСЯ НА ПЕРВУЮ)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS user_lesson_progress (
             user_id BIGINT NOT NULL,
@@ -60,14 +61,13 @@ def setup_database():
             PRIMARY KEY (user_id, course_id, lesson_id)
         );
     """)
-    # <-- КОНЕЦ ИЗМЕНЕНИЙ -->
     
-    # Создаем индекс для ускорения выборок по дате
+    # 4. Создаем индекс для ускорения выборок по дате
     cur.execute("""
         CREATE INDEX IF NOT EXISTS idx_messages_date_user_id ON messages (message_date, user_id);
     """)
     
-    # Добавляем недостающие колонки в существующую таблицу (если они еще не добавлены)
+    # 5. Добавляем недостающие колонки в существующую таблицу (если они еще не добавлены)
     try:
         cur.execute("ALTER TABLE channel_subscribers ADD COLUMN IF NOT EXISTS last_name VARCHAR(255);")
         cur.execute("ALTER TABLE channel_subscribers ADD COLUMN IF NOT EXISTS photo_url VARCHAR(500);")
@@ -76,6 +76,8 @@ def setup_database():
         cur.execute("ALTER TABLE channel_subscribers ADD COLUMN IF NOT EXISTS last_seen TIMESTAMPTZ DEFAULT NOW();")
     except Exception as e:
         logging.warning(f"Error adding columns (they might already exist): {e}")
+        
+    # <-- КОНЕЦ ИЗМЕНЕНИЙ -->
     
     conn.commit()
     cur.close()
