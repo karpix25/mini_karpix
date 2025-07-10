@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+psycopg2-binary
+fastapi-admin==0.5.2
+python-jose[cryptography]
+passlib[bcrypt]
+tortoise-orm
