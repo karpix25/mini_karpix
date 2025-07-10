@@ -3,8 +3,9 @@ import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-do
 import './App.css';
 import Leaderboard from './Leaderboard';
 import Content from './Content';
+import SkillTree from './SkillTree'; // Добавили импорт
 import ArticleReader from './ArticleReader';
-import Profile from './Profile'; // Мы создадим этот файл
+import Profile from './Profile';
 
 function App() {
   return (
@@ -15,12 +16,14 @@ function App() {
             <Route path="/" element={<Profile />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/content" element={<Content />} />
+            <Route path="/skilltree" element={<SkillTree />} /> {/* Новый роут */}
             <Route path="/article/:articleId" element={<ArticleReader />} />
           </Routes>
         </div>
         
         <Routes>
             <Route path="/article/:articleId" element={null} />
+            <Route path="/skilltree" element={null} /> {/* Скрываем навигацию */}
             <Route path="*" element={
                 <div className="nav-tabs">
                     <NavLink to="/" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
