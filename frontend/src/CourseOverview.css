@@ -1,0 +1,399 @@
+/* ===== ОСНОВНОЙ КОНТЕЙНЕР ===== */
+.course-overview-container {
+  min-height: 100vh;
+  background-color: var(--tg-theme-secondary-bg-color, #f8f9fa);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  padding: 0;
+}
+
+/* ===== МОБИЛЬНАЯ НАВИГАЦИЯ ===== */
+.mobile-navigation {
+  background: var(--tg-theme-bg-color, #ffffff);
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #e9ecef);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.back-to-menu {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--tg-theme-link-color, #007bff);
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  font-weight: 500;
+}
+
+.back-to-menu:hover {
+  opacity: 0.8;
+}
+
+/* ===== ЗАГОЛОВОК КУРСА ===== */
+.course-header {
+  background: var(--tg-theme-bg-color, #ffffff);
+  padding: 24px 20px;
+  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #e9ecef);
+}
+
+.course-title {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--tg-theme-text-color, #1a1a1a);
+  line-height: 1.3;
+}
+
+.course-description {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+  color: var(--tg-theme-hint-color, #6c757d);
+  line-height: 1.4;
+}
+
+/* ===== СТАТИСТИКА КУРСА ===== */
+.course-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-text {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.progress-percentage {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--tg-theme-text-color, #1a1a1a);
+}
+
+.progress-label {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #6c757d);
+}
+
+.progress-bar {
+  height: 8px;
+  background-color: var(--tg-theme-secondary-bg-color, #e9ecef);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--tg-theme-link-color, #007bff) 0%, var(--tg-theme-button-color, #0056b3) 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.course-meta {
+  display: flex;
+  gap: 20px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #6c757d);
+}
+
+.meta-icon {
+  font-size: 16px;
+}
+
+/* ===== РАЗДЕЛЫ КУРСА ===== */
+.course-sections {
+  padding: 0;
+}
+
+.course-section {
+  background: var(--tg-theme-bg-color, #ffffff);
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #e9ecef);
+}
+
+/* ===== ЗАГОЛОВОК РАЗДЕЛА ===== */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  user-select: none;
+}
+
+.section-header:hover {
+  background-color: var(--tg-theme-secondary-bg-color, #f8f9fa);
+}
+
+.section-header:active {
+  background-color: var(--tg-theme-secondary-bg-color, #e9ecef);
+}
+
+.section-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.section-icon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #1a1a1a);
+}
+
+.section-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lessons-count {
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #6c757d);
+  font-weight: 500;
+}
+
+.toggle-arrow {
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #6c757d);
+  transition: transform 0.2s ease;
+  width: 16px;
+  text-align: center;
+}
+
+.toggle-arrow.expanded {
+  transform: rotate(180deg);
+}
+
+/* ===== СПИСОК УРОКОВ ===== */
+.section-lessons {
+  background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+.lesson-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px 12px 52px; /* Отступ слева для выравнивания с иконкой раздела */
+  cursor: pointer;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.lesson-item:last-child {
+  border-bottom: none;
+}
+
+.lesson-item:hover:not(.locked) {
+  background-color: var(--tg-theme-bg-color, #ffffff);
+}
+
+.lesson-item:active:not(.locked) {
+  background-color: var(--tg-theme-secondary-bg-color, #e9ecef);
+}
+
+.lesson-item.locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lesson-item.completed {
+  background: linear-gradient(90deg, rgba(40, 167, 69, 0.1) 0%, transparent 100%);
+}
+
+.lesson-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.lesson-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.lesson-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--tg-theme-text-color, #1a1a1a);
+  line-height: 1.3;
+}
+
+.lesson-item.locked .lesson-title {
+  color: var(--tg-theme-hint-color, #6c757d);
+}
+
+.lesson-duration {
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #6c757d);
+  font-weight: 500;
+}
+
+/* ===== ИНФОРМАЦИЯ О ДОСТУПЕ ===== */
+.access-info {
+  padding: 20px;
+  text-align: center;
+}
+
+.access-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #6c757d);
+  line-height: 1.4;
+  background: var(--tg-theme-bg-color, #ffffff);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--tg-theme-secondary-bg-color, #e9ecef);
+}
+
+/* ===== СОСТОЯНИЯ ЗАГРУЗКИ И ОШИБКИ ===== */
+.loading-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--tg-theme-secondary-bg-color, #e9ecef);
+  border-top: 3px solid var(--tg-theme-link-color, #007bff);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-state p {
+  margin: 0;
+  font-size: 16px;
+  color: var(--tg-theme-hint-color, #6c757d);
+}
+
+.error-state h2 {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  color: var(--tg-theme-text-color, #1a1a1a);
+}
+
+.back-button {
+  background: var(--tg-theme-button-color, #007bff);
+  color: var(--tg-theme-button-text-color, #ffffff);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.back-button:hover {
+  opacity: 0.9;
+}
+
+/* ===== АДАПТИВНОСТЬ ===== */
+@media (max-width: 768px) {
+  .course-header {
+    padding: 20px 16px;
+  }
+  
+  .course-title {
+    font-size: 20px;
+  }
+  
+  .course-description {
+    font-size: 14px;
+  }
+  
+  .section-header {
+    padding: 14px 16px;
+  }
+  
+  .section-title {
+    font-size: 15px;
+  }
+  
+  .lesson-item {
+    padding: 10px 16px 10px 44px;
+  }
+  
+  .lesson-title {
+    font-size: 14px;
+  }
+  
+  .mobile-navigation {
+    padding: 12px 16px;
+  }
+  
+  .access-info {
+    padding: 16px;
+  }
+  
+  .access-text {
+    font-size: 13px;
+    padding: 12px;
+  }
+}
+
+/* ===== АНИМАЦИИ ===== */
+.course-section {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
