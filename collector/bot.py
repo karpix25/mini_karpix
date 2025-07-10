@@ -48,6 +48,20 @@ def setup_database():
         );
     """)
     
+    # <-- НАЧАЛО ИЗМЕНЕНИЙ -->
+    # Создание таблицы прогресса по урокам
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS user_lesson_progress (
+            user_id BIGINT NOT NULL,
+            course_id VARCHAR(100) NOT NULL,
+            lesson_id VARCHAR(100) NOT NULL,
+            completed_at TIMESTAMPTZ DEFAULT NOW(),
+            FOREIGN KEY (user_id) REFERENCES channel_subscribers(telegram_id) ON DELETE CASCADE,
+            PRIMARY KEY (user_id, course_id, lesson_id)
+        );
+    """)
+    # <-- КОНЕЦ ИЗМЕНЕНИЙ -->
+    
     # Создаем индекс для ускорения выборок по дате
     cur.execute("""
         CREATE INDEX IF NOT EXISTS idx_messages_date_user_id ON messages (message_date, user_id);
