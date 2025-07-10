@@ -3,34 +3,40 @@ services:
     build: ./collector
     restart: unless-stopped
     environment:
-      # Мы берем URL из переменных окружения EasyPanel
+      # Этот URL будет браться из переменных окружения в EasyPanel
       - DATABASE_URL=${DATABASE_URL} 
       - BOT_TOKEN=${BOT_TOKEN}
       - GROUP_ID=${GROUP_ID}
-    networks:
-      - default # Подключаем к сети, описанной ниже
+    depends_on:
+      - database # <-- Указываем зависимость от нашего сервиса БД
 
   backend:
     build: ./backend
     restart: unless-stopped
     environment:
-      # Мы берем URL из переменных окружения EasyPanel
+      # Этот URL будет браться из переменных окружения в EasyPanel
       - DATABASE_URL=${DATABASE_URL}
       - BOT_TOKEN=${BOT_TOKEN}
     volumes:
       - ./content:/app/content
-    networks:
-      - default # Подключаем к сети, описанной ниже
+    depends_on:
+      - database # <-- Указываем зависимость от нашего сервиса БД
 
   frontend:
     build: ./frontend
     restart: unless-stopped
-    networks:
-      - default # Подключаем к сети, описанной ниже
 
-# Этот блок говорит Docker: "Подключи все сервисы выше к уже 
-# существующей сети с именем easypanel-n8n_karpix"
-networks:
-  default:
-    external: true
-    name: easypanel-n8n_karpix 
+  # --- НАША НОВАЯ БАЗА ДАННЫХ ВНУТРИ ПРОЕКТА ---
+  database:
+    image: postgres:17 # Используем новую версию
+    restart: unless-stopped
+    environment:
+      # Эти переменные мы зададим в интерфейсе EasyPanel
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
