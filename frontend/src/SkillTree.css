@@ -1,159 +1,106 @@
-/* ===== ИГРОВОЕ ДЕРЕВО НАВЫКОВ ===== */
-.skill-tree-game {
+/* ===== ГИБРИДНОЕ ДЕРЕВО НАВЫКОВ ===== */
+.skill-tree-hybrid {
   position: relative;
   width: 100vw;
   height: 100vh;
-  background: radial-gradient(ellipse at center, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   user-select: none;
   -webkit-user-select: none;
+  /* ИСПРАВЛЯЕМ ЗУМА ИНТЕРФЕЙСА */
+  touch-action: none;
 }
 
-/* ===== ЗВЕЗДНОЕ ПОЛЕ ===== */
-.star-field {
+/* Фиксируем viewport для предотвращения зума интерфейса */
+.skill-tree-hybrid * {
+  touch-action: manipulation;
+}
+
+/* ===== ФИКСИРОВАННЫЙ UI ===== */
+.fixed-ui {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.user-stats {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  gap: 15px;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 12px 16px;
+  border-radius: 25px;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  pointer-events: auto;
+}
+
+.zoom-controls {
+  position: absolute;
+  bottom: 30px;
+  right: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.zoom-controls button {
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  /* УБИРАЕМ TRANSITION для производительности */
+}
+
+.zoom-controls button:active {
+  transform: scale(0.95);
+}
+
+/* ===== ОСНОВНОЙ КОНТЕЙНЕР ===== */
+.tree-container {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  transform-origin: center center;
+  will-change: transform;
+  /* НИКАКИХ TRANSITION - только мгновенные обновления */
+}
+
+/* ===== CANVAS ДЛЯ СОЕДИНЕНИЙ ===== */
+.connection-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
   pointer-events: none;
   z-index: 1;
 }
 
-.star {
+/* ===== УЗЛЫ ДЕРЕВА ===== */
+.tree-node {
   position: absolute;
-  background: white;
-  border-radius: 50%;
-  animation: twinkle 3s infinite ease-in-out;
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 1; }
-}
-
-/* ===== ИГРОВОЙ ИНТЕРФЕЙС ===== */
-.game-ui {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  z-index: 100;
-  display: flex;
-  gap: 20px;
-}
-
-.player-stats {
-  display: flex;
-  gap: 15px;
-  background: rgba(0, 0, 0, 0.8);
-  padding: 15px 20px;
-  border-radius: 15px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-}
-
-.stats-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: white;
-  font-weight: 600;
-  font-size: 16px;
-}
-
-.stats-icon {
-  font-size: 20px;
-}
-
-/* ===== ХОЛСТ ДЕРЕВА ===== */
-.skill-tree-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  transform-origin: center;
-  /* УБИРАЕМ TRANSITION для производительности */
-  z-index: 10;
-  will-change: transform; /* Оптимизация GPU */
-}
-
-/* ===== СЛОИ ===== */
-.connections-layer,
-.skills-layer,
-.branch-labels {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.skills-layer {
-  pointer-events: auto;
-}
-
-/* ===== СОЕДИНИТЕЛЬНЫЕ ЛИНИИ ===== */
-.connection-svg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.connection-line {
-  filter: drop-shadow(0 0 5px currentColor);
-  stroke-linecap: round;
-}
-
-.connection-line.main-branch {
-  stroke-width: 6;
-  filter: drop-shadow(0 0 10px currentColor);
-}
-
-/* ===== ЦЕНТРАЛЬНЫЙ АВАТАР ===== */
-.player-avatar {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 120px;
-  height: 120px;
-  z-index: 50;
-  pointer-events: none;
-  will-change: transform; /* Оптимизация GPU */
-}
-
-.avatar-ring {
-  position: absolute;
-  top: -10px;
-  left: -10px;
-  right: -10px;
-  bottom: -10px;
-  border: 4px solid #FFD700;
-  border-radius: 50%;
-  /* УБИРАЕМ АНИМАЦИЮ ВРАЩЕНИЯ для производительности */
-  box-shadow: 0 0 20px #FFD700;
-}
-
-.avatar-image {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  border: 4px solid white;
-  box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
-  z-index: 2;
-  position: relative;
-}
-
-/* ===== УЗЛЫ НАВЫКОВ ===== */
-.skill-node {
-  position: absolute;
-  width: 80px;
-  height: 80px;
   border-radius: 50%;
   border: 3px solid white;
   display: flex;
@@ -161,29 +108,43 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  /* УБИРАЕМ TRANSITION для производительности */
-  transform-origin: center;
-  z-index: 20;
   font-weight: 600;
   text-align: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  will-change: transform; /* Оптимизация GPU */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  /* УБИРАЕМ ВСЕ TRANSITION для максимальной производительности */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
 }
 
-.skill-node.unlocked {
-  background: linear-gradient(145deg, var(--node-color, #4ECDC4), var(--node-color-dark, #45B7B8));
+/* Типы узлов */
+.tree-node--logo {
+  background: linear-gradient(145deg, #667eea, #764ba2);
+  color: white;
+  border-color: #FFD700;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.tree-node--root {
+  background: linear-gradient(145deg, #8B4513, #A0522D);
+  color: white;
+  border-color: #FFD700;
+  box-shadow: 0 6px 20px rgba(139, 69, 19, 0.4);
+}
+
+.tree-node--branch {
   color: white;
   border-color: white;
-  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
-  /* УБИРАЕМ СИЯНИЕ */
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
-.skill-node.unlocked:hover {
-  /* УБИРАЕМ HOVER ЭФФЕКТЫ для производительности */
-  opacity: 0.9;
+.tree-node--skill.unlocked {
+  color: white;
+  border-color: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
-.skill-node.locked {
+.tree-node--skill.locked {
   background: linear-gradient(145deg, #555, #333);
   color: #999;
   border-color: #666;
@@ -191,97 +152,40 @@
   opacity: 0.6;
 }
 
-.skill-icon {
-  font-size: 24px;
-  margin-bottom: 4px;
-  /* УБИРАЕМ SHADOW для производительности */
+/* Элементы узла */
+.node-icon {
+  font-size: 20px;
+  margin-bottom: 2px;
+  line-height: 1;
 }
 
-.skill-title {
+.node-title {
   font-size: 10px;
   line-height: 1.1;
-  max-width: 70px;
+  max-width: 90%;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-/* ===== НАЗВАНИЯ ВЕТОК ===== */
-.branch-labels {
-  pointer-events: none;
-  z-index: 30;
-}
-
-.branch-label {
-  position: absolute;
-  font-size: 18px;
-  font-weight: 700;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
   white-space: nowrap;
-  filter: drop-shadow(0 0 10px currentColor);
-  /* УБИРАЕМ АНИМАЦИЮ для производительности */
-}
-
-/* ===== ЭЛЕМЕНТЫ УПРАВЛЕНИЯ ===== */
-.zoom-controls {
-  position: absolute;
-  bottom: 30px;
-  right: 30px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  z-index: 100;
-}
-
-.zoom-btn {
-  width: 50px;
-  height: 50px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  font-size: 24px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(10px);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-}
-
-.zoom-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-.zoom-btn.reset {
-  font-size: 20px;
 }
 
 /* ===== СОСТОЯНИЕ ЗАГРУЗКИ ===== */
-.loading-game {
+.loading-container {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
   color: white;
-  z-index: 200;
 }
 
 .loading-spinner {
-  width: 60px;
-  height: 60px;
+  width: 50px;
+  height: 50px;
   border: 4px solid rgba(255, 255, 255, 0.3);
-  border-top: 4px solid #FFD700;
+  border-top: 4px solid white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto 20px;
+  margin: 0 auto 15px;
 }
 
 @keyframes spin {
@@ -289,93 +193,49 @@
   100% { transform: rotate(360deg); }
 }
 
-.loading-game p {
-  font-size: 18px;
-  font-weight: 500;
+.loading-container p {
   margin: 0;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+  font-size: 16px;
+  font-weight: 500;
 }
 
-/* ===== АДАПТИВНОСТЬ ===== */
-
-/* Мобильные устройства */
+/* ===== ОПТИМИЗАЦИЯ ДЛЯ МОБИЛЬНЫХ ===== */
 @media (max-width: 768px) {
-  .game-ui {
+  .user-stats {
     top: 15px;
     left: 15px;
-  }
-  
-  .player-stats {
-    padding: 12px 16px;
+    padding: 10px 14px;
+    font-size: 12px;
     gap: 12px;
   }
   
-  .stats-item {
-    font-size: 14px;
-  }
-  
-  .stats-icon {
-    font-size: 16px;
-  }
-  
-  .player-avatar {
-    width: 100px;
-    height: 100px;
-  }
-  
-  .skill-node {
-    width: 70px;
-    height: 70px;
-  }
-  
-  .skill-icon {
-    font-size: 20px;
-  }
-  
-  .skill-title {
-    font-size: 9px;
-    max-width: 60px;
-  }
-  
-  .branch-label {
-    font-size: 16px;
-  }
-  
   .zoom-controls {
-    bottom: 100px;
+    bottom: 100px; /* Учитываем навигацию */
     right: 20px;
   }
   
-  .zoom-btn {
-    width: 45px;
-    height: 45px;
-    font-size: 20px;
-  }
-}
-
-/* Очень маленькие экраны */
-@media (max-width: 480px) {
-  .player-avatar {
-    width: 80px;
-    height: 80px;
+  .zoom-controls button {
+    width: 44px;
+    height: 44px;
+    font-size: 16px;
   }
   
-  .skill-node {
-    width: 60px;
-    height: 60px;
-  }
-  
-  .skill-icon {
+  .node-icon {
     font-size: 18px;
   }
   
-  .skill-title {
-    font-size: 8px;
-    max-width: 50px;
+  .node-title {
+    font-size: 9px;
   }
-  
-  .branch-label {
-    font-size: 14px;
+}
+
+@media (max-width: 480px) {
+  .user-stats {
+    top: 10px;
+    left: 10px;
+    padding: 8px 12px;
+    font-size: 11px;
+    gap: 10px;
   }
   
   .zoom-controls {
@@ -383,41 +243,49 @@
     right: 15px;
   }
   
-  .zoom-btn {
+  .zoom-controls button {
     width: 40px;
     height: 40px;
-    font-size: 18px;
+    font-size: 14px;
+  }
+  
+  .node-icon {
+    font-size: 16px;
+  }
+  
+  .node-title {
+    font-size: 8px;
   }
 }
 
-/* Планшеты и большие экраны */
-@media (min-width: 1024px) {
-  .player-avatar {
-    width: 140px;
-    height: 140px;
+/* ===== ДОПОЛНИТЕЛЬНАЯ ОПТИМИЗАЦИЯ ===== */
+
+/* Принудительное использование GPU */
+.tree-node,
+.tree-container,
+.connection-canvas {
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Отключаем сглаживание для лучшей производительности */
+.connection-canvas {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Убираем любые hover эффекты на мобильных */
+@media (hover: none) {
+  .tree-node:hover {
+    /* НЕТ hover эффектов на touch устройствах */
   }
-  
-  .skill-node {
-    width: 90px;
-    height: 90px;
-  }
-  
-  .skill-icon {
-    font-size: 26px;
-  }
-  
-  .skill-title {
-    font-size: 11px;
-    max-width: 80px;
-  }
-  
-  .branch-label {
-    font-size: 20px;
-  }
-  
-  .zoom-btn {
-    width: 55px;
-    height: 55px;
-    font-size: 26px;
+}
+
+/* Hover только для десктопа */
+@media (hover: hover) {
+  .tree-node:hover {
+    opacity: 0.9;
   }
 }
