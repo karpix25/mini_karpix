@@ -3,30 +3,34 @@ services:
     build: ./collector
     restart: unless-stopped
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      # Мы берем URL из переменных окружения EasyPanel
+      - DATABASE_URL=${DATABASE_URL} 
       - BOT_TOKEN=${BOT_TOKEN}
       - GROUP_ID=${GROUP_ID}
     networks:
-      - default
+      - default # Подключаем к сети, описанной ниже
 
   backend:
     build: ./backend
     restart: unless-stopped
     environment:
+      # Мы берем URL из переменных окружения EasyPanel
       - DATABASE_URL=${DATABASE_URL}
       - BOT_TOKEN=${BOT_TOKEN}
     volumes:
       - ./content:/app/content
     networks:
-      - default
+      - default # Подключаем к сети, описанной ниже
 
   frontend:
     build: ./frontend
     restart: unless-stopped
     networks:
-      - default
+      - default # Подключаем к сети, описанной ниже
 
+# Этот блок говорит Docker: "Подключи все сервисы выше к уже 
+# существующей сети с именем easypanel-n8n_karpix"
 networks:
   default:
     external: true
-    name: easypanel-n8n_karpix # <--- ИМЯ СЕТИ ВАШЕЙ БАЗЫ ДАННЫХ
+    name: easypanel-n8n_karpix 
