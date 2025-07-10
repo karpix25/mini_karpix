@@ -3,8 +3,6 @@ import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-do
 import './App.css';
 import Leaderboard from './Leaderboard';
 import Content from './Content';
-import CourseOverview from './CourseOverview';
-import LessonReader from './LessonReader';
 import ArticleReader from './ArticleReader';
 import Profile from './Profile';
 
@@ -16,20 +14,12 @@ function App() {
           <Routes>
             <Route path="/" element={<Profile />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/content" element={<Content />} /> {/* ВЕРНУЛИ Content */}
-            
-            {/* Роуты для курсов (Skool структура) */}
-            <Route path="/course/:courseId" element={<CourseOverview />} />
-            <Route path="/course/:courseId/lesson/:lessonId" element={<LessonReader />} />
-            
-            {/* Старый роут для совместимости */}
+            <Route path="/content" element={<Content />} />
             <Route path="/article/:articleId" element={<ArticleReader />} />
           </Routes>
         </div>
         
         <Routes>
-            {/* Скрываем навигацию на страницах курсов и уроков */}
-            <Route path="/course/*" element={null} />
             <Route path="/article/:articleId" element={null} />
             <Route path="*" element={
                 <div className="nav-tabs">
