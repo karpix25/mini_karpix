@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import './ArticleReader.css';
@@ -7,102 +7,61 @@ import './ArticleReader.css';
 const tg = window.Telegram?.WebApp;
 const BACKEND_URL = "https://miniback.karpix.com";
 
-// Компонент для элемента навигации в sidebar
-const LessonItem = ({ lesson, isActive, isCompleted, isLocked, onClick }) => {
+// Компонент для урока в sidebar (десктоп)
+const LessonSidebarItem = ({ lesson, isActive, onClick }) => {
   return (
     <div 
-      className={`lesson-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}`}
-      onClick={!isLocked ? onClick : undefined}
+      className={`lesson-sidebar-item ${isActive ? 'active' : ''} ${lesson.locked ? 'locked' : ''}`}
+      onClick={!lesson.locked ? onClick : undefined}
     >
-      <div className="lesson-status">
-        {isCompleted ? (
-          <div className="status-icon completed">✓</div>
-        ) : isLocked ? (
-          <div className="status-icon locked">🔒</div>
-        ) : (
-          <div className="status-icon available"></div>
-        )}
-      </div>
-      
-      <div className="lesson-content">
-        <h4 className="lesson-title">{lesson.title}</h4>
-        {lesson.description && (
-          <p className="lesson-description">{lesson.description}</p>
-        )}
-      </div>
-      
-      {!isLocked && (
-        <div className="lesson-arrow">→</div>
-      )}
-    </div>
-  );
-};
-
-// Компонент для прогресса курса в sidebar
-const CourseProgress = ({ courseName, progress, completedLessons, totalLessons }) => {
-  return (
-    <div className="course-progress-sidebar">
-      <h3 className="course-name">{courseName}</h3>
-      <div className="progress-stats">
-        <span className="progress-text">{progress}% завершено</span>
-        <span className="lessons-stats">{completedLessons}/{totalLessons} уроков</span>
-      </div>
-      <div className="progress-bar-sidebar">
-        <div 
-          className="progress-fill-sidebar" 
-          style={{ width: `${progress}%` }}
-        ></div>
-      </div>
+      <div className="lesson-title">{lesson.title}</div>
     </div>
   );
 };
 
 function ArticleReader() {
   const { articleId } = useParams();
+  const navigate = useNavigate();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
 
-  // Моковые данные для демонстрации структуры курса
+  // Моковые данные курса (позже заменим на API)
   const courseData = {
-    name: "Основы веб-разработки",
+    name: "Обучающие курсы",
     lessons: [
       { 
         id: "welcome", 
-        title: "Добро пожаловать", 
-        description: "Введение в курс",
-        completed: true 
+        title: "Step 1 → Read This First 🔥", 
+        completed: true,
+        locked: false
       },
       { 
         id: "done", 
-        title: "Завершение", 
-        description: "Подведение итогов",
-        completed: false 
+        title: "Step 2 → Getting Started", 
+        completed: false,
+        locked: false
       },
       { 
         id: "advanced", 
-        title: "Продвинутые техники", 
-        description: "Для опытных разработчиков",
+        title: "Step 3 → Advanced Topics", 
         completed: false,
-        locked: true 
+        locked: true
       }
     ]
   };
 
+  const currentLesson = courseData.lessons.find(l => l.id === articleId);
   const currentLessonIndex = courseData.lessons.findIndex(l => l.id === articleId);
-  const currentLesson = courseData.lessons[currentLessonIndex];
-  const completedCount = courseData.lessons.filter(l => l.completed).length;
-  const progress = Math.round((completedCount / courseData.lessons.length) * 100);
 
   useEffect(() => {
     if (tg) {
       tg.BackButton.show();
-      const onBackClick = () => window.history.back();
+      const onBackClick = () => navigate('/content');
       tg.BackButton.onClick(onBackClick);
       return () => tg.BackButton.offClick(onBackClick);
     }
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -113,12 +72,10 @@ function ArticleReader() {
           headers: { 'X-Init-Data': tg.initData }
         });
         
-        if (!response.ok) throw new Error('Не удалось загрузить статью');
+        if (!response.ok) throw new Error('Не удалось загрузить урок');
         
         const data = await response.json();
         setArticle(data);
-        
-        // Проверяем статус завершения (пока моковые данные)
         setIsCompleted(currentLesson?.completed || false);
         
       } catch (error) {
@@ -133,99 +90,75 @@ function ArticleReader() {
 
   const handleMarkComplete = () => {
     setIsCompleted(!isCompleted);
-    // Здесь будет API вызов для сохранения прогресса
+    // TODO: API вызов для сохранения прогресса
     console.log(`Урок ${articleId} отмечен как ${!isCompleted ? 'завершенный' : 'незавершенный'}`);
   };
 
   const handleLessonSelect = (lessonId) => {
-    if (lessonId !== articleId) {
-      window.location.href = `/article/${lessonId}`;
-    }
-    setSidebarOpen(false);
+    navigate(`/article/${lessonId}`);
+  };
+
+  const goBackToContent = () => {
+    navigate('/content');
   };
 
   if (loading) {
     return (
-      <div className="article-reader">
-        <div className="loading-content">Загрузка урока...</div>
+      <div className="article-reader-container">
+        <div className="loading-state">Загрузка урока...</div>
       </div>
     );
   }
 
   return (
-    <div className="article-reader">
-      {/* Кнопка для открытия sidebar на мобильных */}
-      <button 
-        className="sidebar-toggle"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
-        ☰ Содержание
-      </button>
-
-      {/* Overlay для закрытия sidebar на мобильных */}
-      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>}
-
-      {/* Левая панель с навигацией */}
-      <div className={`course-sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <CourseProgress 
-          courseName={courseData.name}
-          progress={progress}
-          completedLessons={completedCount}
-          totalLessons={courseData.lessons.length}
-        />
+    <div className="article-reader-container">
+      {/* Левый sidebar для десктопа */}
+      <div className="course-sidebar-desktop">
+        <div className="sidebar-header">
+          <h3 className="course-name">{courseData.name}</h3>
+          <div className="progress-info">0%</div>
+        </div>
         
-        <div className="lessons-list">
+        <div className="lessons-sidebar-list">
           {courseData.lessons.map((lesson) => (
-            <LessonItem
+            <LessonSidebarItem
               key={lesson.id}
               lesson={lesson}
               isActive={lesson.id === articleId}
-              isCompleted={lesson.completed}
-              isLocked={lesson.locked}
               onClick={() => handleLessonSelect(lesson.id)}
             />
           ))}
         </div>
-
-        {/* Ресурсы */}
-        <div className="course-resources">
-          <h4>Ресурсы</h4>
-          <a href="#" className="resource-link">
-            <span className="resource-icon">🔗</span>
-            Дополнительные материалы
-          </a>
-        </div>
       </div>
 
       {/* Основная область контента */}
-      <div className="article-content">
+      <div className="article-main-content">
+        {/* Мобильная навигация */}
+        <div className="mobile-navigation">
+          <button className="back-to-menu" onClick={goBackToContent}>
+            ← Menu
+          </button>
+        </div>
+
         {/* Заголовок урока */}
         <div className="lesson-header">
-          <h1 className="lesson-title">{currentLesson?.title || article?.title || 'Урок'}</h1>
+          <h1 className="lesson-title">
+            {currentLesson?.title || article?.title || 'Урок'}
+          </h1>
           <button 
             className={`complete-button ${isCompleted ? 'completed' : ''}`}
             onClick={handleMarkComplete}
           >
             {isCompleted ? (
-              <>
-                <span className="check-icon">✓</span>
-                Завершено
-              </>
+              <div className="completion-check">✓</div>
             ) : (
-              'Отметить как завершенное'
+              <div className="completion-circle"></div>
             )}
           </button>
         </div>
 
-        {/* Браузерная ссылка назад (только для разработки) */}
-        {!tg && (
-          <Link to="/content" className="back-button">
-            ← Назад к курсам
-          </Link>
-        )}
-
         {/* Markdown контент */}
-        <div className="markdown-content">
+        <div className="lesson-content">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {article?.content || "Контент урока загружается..."}
           </ReactMarkdown>
@@ -234,21 +167,21 @@ function ArticleReader() {
         {/* Навигация между уроками */}
         <div className="lesson-navigation">
           {currentLessonIndex > 0 && (
-            <Link 
-              to={`/article/${courseData.lessons[currentLessonIndex - 1].id}`}
+            <button 
               className="nav-button prev"
+              onClick={() => handleLessonSelect(courseData.lessons[currentLessonIndex - 1].id)}
             >
-              ← Предыдущий урок
-            </Link>
+              ← Previous
+            </button>
           )}
           
           {currentLessonIndex < courseData.lessons.length - 1 && (
-            <Link 
-              to={`/article/${courseData.lessons[currentLessonIndex + 1].id}`}
+            <button 
               className="nav-button next"
+              onClick={() => handleLessonSelect(courseData.lessons[currentLessonIndex + 1].id)}
             >
-              Следующий урок →
-            </Link>
+              Next →
+            </button>
           )}
         </div>
       </div>
