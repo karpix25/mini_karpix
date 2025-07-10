@@ -268,13 +268,30 @@ function SkillTree() {
     const updateDimensions = () => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
-        setDimensions({ width: rect.width, height: rect.height });
+        setDimensions({ 
+          width: rect.width || window.innerWidth, 
+          height: rect.height || window.innerHeight 
+        });
+      } else {
+        // Fallback если ref не готов
+        setDimensions({ 
+          width: window.innerWidth, 
+          height: window.innerHeight 
+        });
       }
     };
 
+    // Немедленно обновляем размеры
     updateDimensions();
+    
+    // Добавляем небольшую задержку для случая когда ref еще не готов
+    const timeoutId = setTimeout(updateDimensions, 100);
+    
     window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
+    return () => {
+      window.removeEventListener('resize', updateDimensions);
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   // Обновление позиций при изменении
@@ -286,7 +303,11 @@ function SkillTree() {
   // Загрузка данных пользователя
   useEffect(() => {
     const fetchUserData = async () => {
+      // Если нет Telegram данных, используем моковые данные для тестирования
       if (!tg?.initData) {
+        console.log('No Telegram initData, using mock data');
+        setUser({ first_name: 'Test User', rank: 'Новичок' });
+        setUserPoints(50); // Тестовые очки
         setLoading(false);
         return;
       }
@@ -299,10 +320,18 @@ function SkillTree() {
         if (response.ok) {
           const userData = await response.json();
           setUser(userData);
-          setUserPoints(userData.points);
+          setUserPoints(userData.points || 0);
+        } else {
+          console.error('API response not ok:', response.status);
+          // Fallback данные
+          setUser({ first_name: 'User', rank: 'Новичок' });
+          setUserPoints(0);
         }
       } catch (error) {
         console.error('Ошибка загрузки данных:', error);
+        // Fallback данные
+        setUser({ first_name: 'User', rank: 'Новичок' });
+        setUserPoints(0);
       } finally {
         setLoading(false);
       }
@@ -397,10 +426,7 @@ function SkillTree() {
     );
   }
 
-  if (!positions) {
-    return <div className="skill-tree-hybrid">Инициализация...</div>;
-  }
-
+  // Показываем дерево даже если позиции еще не рассчитались
   return (
     <div className="skill-tree-hybrid">
       {/* Фиксированный UI */}
@@ -429,53 +455,62 @@ function SkillTree() {
           transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`
         }}
       >
-        {/* Canvas для соединений */}
-        <ConnectionCanvas 
-          positions={positions} 
-          dimensions={dimensions} 
-          scale={transform.scale} 
-        />
+        {/* Показываем контент только если позиции рассчитались */}
+        {positions ? (
+          <>
+            {/* Canvas для соединений */}
+            <ConnectionCanvas 
+              positions={positions} 
+              dimensions={dimensions} 
+              scale={transform.scale} 
+            />
 
-        {/* Логотип */}
-        <TreeNode
-          node={SKILL_TREE_CONFIG.logo}
-          type="logo"
-          isUnlocked={true}
-          scale={transform.scale}
-        />
+            {/* Логотип */}
+            <TreeNode
+              node={SKILL_TREE_CONFIG.logo}
+              type="logo"
+              isUnlocked={true}
+              scale={transform.scale}
+            />
 
-        {/* Корневой узел */}
-        <TreeNode
-          node={{ ...SKILL_TREE_CONFIG.root, ...positions.root }}
-          type="root"
-          isUnlocked={isNodeUnlocked(SKILL_TREE_CONFIG.root)}
-          onClick={handleNodeClick}
-          scale={transform.scale}
-        />
+            {/* Корневой узел */}
+            <TreeNode
+              node={{ ...SKILL_TREE_CONFIG.root, ...positions.root }}
+              type="root"
+              isUnlocked={isNodeUnlocked(SKILL_TREE_CONFIG.root)}
+              onClick={handleNodeClick}
+              scale={transform.scale}
+            />
 
-        {/* Ветки */}
-        {positions.branches.map((branch, index) => (
-          <TreeNode
-            key={branch.id}
-            node={{ ...SKILL_TREE_CONFIG.branches[index], ...branch }}
-            type="branch"
-            isUnlocked={isNodeUnlocked(SKILL_TREE_CONFIG.branches[index])}
-            onClick={handleNodeClick}
-            scale={transform.scale}
-          />
-        ))}
+            {/* Ветки */}
+            {positions.branches.map((branch, index) => (
+              <TreeNode
+                key={branch.id}
+                node={{ ...SKILL_TREE_CONFIG.branches[index], ...branch }}
+                type="branch"
+                isUnlocked={isNodeUnlocked(SKILL_TREE_CONFIG.branches[index])}
+                onClick={handleNodeClick}
+                scale={transform.scale}
+              />
+            ))}
 
-        {/* Навыки */}
-        {positions.skills.map(skill => (
-          <TreeNode
-            key={skill.id}
-            node={skill}
-            type="skill"
-            isUnlocked={isNodeUnlocked(skill)}
-            onClick={handleNodeClick}
-            scale={transform.scale}
-          />
-        ))}
+            {/* Навыки */}
+            {positions.skills.map(skill => (
+              <TreeNode
+                key={skill.id}
+                node={skill}
+                type="skill"
+                isUnlocked={isNodeUnlocked(skill)}
+                onClick={handleNodeClick}
+                scale={transform.scale}
+              />
+            ))}
+          </>
+        ) : (
+          <div className="loading-container">
+            <p>Подготовка дерева навыков...</p>
+          </div>
+        )}
       </div>
     </div>
   );
