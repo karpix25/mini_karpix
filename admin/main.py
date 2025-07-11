@@ -388,7 +388,7 @@ def render_courses_list(courses, debug_info=""):
                     {access_badge}
                 </div>
                 <div class="course-actions">
-                    <a href="/admin/courses/{course['id']}/pages" class="btn btn-small">Страницы</a>
+                    <a href="/admin/courses/{course['id']}/lessons" class="btn btn-small">Уроки</a>
                     <a href="/admin/courses/{course['id']}/edit" class="btn btn-small btn-secondary">Изменить</a>
                     <a href="/admin/courses/{course['id']}/delete" class="btn btn-small btn-danger" 
                        onclick="return confirm('Удалить курс?')">Удалить</a>
@@ -585,6 +585,575 @@ async def course_pages(course_id: int):
 @app.get("/admin/lessons", response_class=HTMLResponse)
 async def list_lessons():
     return HTMLResponse("<h1>Старые уроки</h1><p>Переходите на новую систему курсов!</p><a href='/admin/courses'>→ Курсы</a>")
+
+# ДОБАВЬТЕ ЭТИ ФУНКЦИИ И РОУТЫ В ВАШ admin/main.py
+
+# --- НОВЫЕ HTML ШАБЛОНЫ ДЛЯ УРОКОВ ---
+
+LESSONS_LIST_TEMPLATE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Уроки курса - {course_name}</title>
+    <meta charset="utf-8">
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; padding: 20px; background: #f8f9fa; 
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 30px; padding: 20px 0; 
+        }
+        .header h1 { margin: 0; color: #2c3e50; font-size: 28px; }
+        .breadcrumb { color: #6c757d; font-size: 14px; margin-bottom: 10px; }
+        .breadcrumb a { color: #007bff; text-decoration: none; }
+        .btn { 
+            padding: 12px 24px; background: #007bff; color: white; text-decoration: none; 
+            border-radius: 8px; font-weight: 500; border: none; cursor: pointer;
+        }
+        .btn:hover { background: #0056b3; }
+        .btn-secondary { background: #6c757d; }
+        .btn-danger { background: #dc3545; }
+        .btn-small { padding: 6px 12px; font-size: 12px; }
+        
+        .lessons-list { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .lesson-item { 
+            padding: 20px; border-bottom: 1px solid #e9ecef; 
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .lesson-item:last-child { border-bottom: none; }
+        .lesson-info h3 { margin: 0 0 5px 0; color: #2c3e50; font-size: 18px; }
+        .lesson-meta { color: #6c757d; font-size: 14px; }
+        .lesson-actions { display: flex; gap: 8px; }
+        .drag-handle { color: #6c757d; cursor: move; margin-right: 15px; }
+        
+        .empty-state { 
+            text-align: center; padding: 60px 20px; color: #6c757d; 
+            background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .empty-state h3 { margin-bottom: 10px; color: #495057; }
+        
+        .course-info { 
+            background: white; border-radius: 12px; padding: 20px; margin-bottom: 30px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 20px;
+        }
+        .course-cover { 
+            width: 80px; height: 80px; border-radius: 8px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;
+        }
+        .course-details h2 { margin: 0 0 5px 0; color: #2c3e50; }
+        .course-details p { margin: 0; color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="/admin/courses">← Курсы</a> / {course_name}
+        </div>
+        
+        <div class="header">
+            <h1>📖 Уроки курса</h1>
+            <a href="/admin/courses/{course_id}/lessons/new" class="btn">+ Новый урок</a>
+        </div>
+        
+        <div class="course-info">
+            <div class="course-cover">{course_initial}</div>
+            <div class="course-details">
+                <h2>{course_name}</h2>
+                <p>{course_description}</p>
+            </div>
+        </div>
+        
+        {lessons_content}
+    </div>
+</body>
+</html>
+"""
+
+LESSON_FORM_TEMPLATE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{form_title}</title>
+    <meta charset="utf-8">
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; padding: 20px; background: #f8f9fa; 
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .breadcrumb { color: #6c757d; font-size: 14px; margin-bottom: 10px; }
+        .breadcrumb a { color: #007bff; text-decoration: none; }
+        
+        .form-card { 
+            background: white; border-radius: 12px; padding: 30px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+        }
+        .form-header { margin-bottom: 30px; }
+        .form-header h1 { margin: 0; color: #2c3e50; font-size: 24px; }
+        .form-header p { margin: 5px 0 0 0; color: #6c757d; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { 
+            display: block; margin-bottom: 8px; font-weight: 600; 
+            color: #2c3e50; font-size: 14px; 
+        }
+        .form-group input, .form-group textarea, .form-group select { 
+            width: 100%; padding: 12px; border: 1px solid #dee2e6; 
+            border-radius: 8px; font-size: 14px; box-sizing: border-box;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { 
+            outline: none; border-color: #007bff; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); 
+        }
+        .form-group textarea { height: 120px; resize: vertical; }
+        .form-group textarea.content-editor { height: 400px; font-family: 'Monaco', 'Menlo', monospace; }
+        .help-text { font-size: 12px; color: #6c757d; margin-top: 4px; }
+        
+        .form-row { display: flex; gap: 20px; }
+        .form-row .form-group { flex: 1; }
+        
+        .form-actions { 
+            display: flex; gap: 15px; justify-content: flex-end; 
+            margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; 
+        }
+        .btn { 
+            padding: 12px 24px; border-radius: 8px; font-weight: 500; 
+            text-decoration: none; border: none; cursor: pointer; 
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn:hover { opacity: 0.9; }
+        
+        .preview-section { 
+            background: #f8f9fa; border-radius: 8px; padding: 20px; margin-top: 20px; 
+        }
+        .preview-title { font-weight: 600; margin-bottom: 10px; color: #2c3e50; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="/admin/courses">Курсы</a> / 
+            <a href="/admin/courses/{course_id}/lessons">{course_name}</a> / 
+            {form_title}
+        </div>
+        
+        <div class="form-card">
+            <div class="form-header">
+                <h1>{form_title}</h1>
+                <p>Создайте интересный урок для вашего курса</p>
+            </div>
+            
+            <form method="post">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Название урока</label>
+                        <input type="text" name="title" value="{title}" required maxlength="100" 
+                               placeholder="Например: Основы HTML">
+                        <div class="help-text">Максимум 100 символов</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Порядковый номер</label>
+                        <input type="number" name="order_index" value="{order_index}" min="1" 
+                               placeholder="1">
+                        <div class="help-text">Порядок показа урока в курсе</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Краткое описание урока</label>
+                    <textarea name="description" maxlength="300" 
+                              placeholder="Краткое описание того, что изучат в этом уроке">{description}</textarea>
+                    <div class="help-text">Максимум 300 символов</div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Содержимое урока</label>
+                    <textarea name="content" class="content-editor" 
+                              placeholder="# Заголовок урока
+
+Добро пожаловать в урок! Здесь вы можете использовать **Markdown** для форматирования.
+
+## Что мы изучим:
+- Пункт 1
+- Пункт 2 
+- Пункт 3
+
+> Это важная заметка для студентов
+
+```python
+# Пример кода
+print('Привет, мир!')
+```
+
+[Ссылка на дополнительные материалы](https://example.com)">{content}</textarea>
+                    <div class="help-text">Используйте Markdown для форматирования. Поддерживаются заголовки, списки, код, ссылки</div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Тип урока</label>
+                        <select name="lesson_type">
+                            <option value="text" {text_selected}>📄 Текстовый урок</option>
+                            <option value="video" {video_selected}>🎥 Видео урок</option>
+                            <option value="interactive" {interactive_selected}>⚡ Интерактивный</option>
+                            <option value="quiz" {quiz_selected}>❓ Тест/Квиз</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Время прохождения (мин)</label>
+                        <input type="number" name="duration_minutes" value="{duration_minutes}" min="1" 
+                               placeholder="15">
+                        <div class="help-text">Примерное время на изучение</div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <a href="/admin/courses/{course_id}/lessons" class="btn btn-secondary">Отмена</a>
+                    <button type="submit" class="btn btn-primary">Сохранить урок</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+# --- НОВЫЕ ФУНКЦИИ ДЛЯ РАБОТЫ С УРОКАМИ ---
+
+def ensure_lessons_table_exists():
+    """Создаем таблицу уроков для курсов из админки"""
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS course_lessons (
+                id SERIAL PRIMARY KEY,
+                course_id INT REFERENCES courses(id) ON DELETE CASCADE,
+                title VARCHAR(200) NOT NULL,
+                description TEXT,
+                content TEXT,
+                lesson_type VARCHAR(20) DEFAULT 'text',
+                order_index INT DEFAULT 1,
+                duration_minutes INT DEFAULT 15,
+                is_published BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            );
+        """)
+        
+        # Индекс для быстрого поиска
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_course_lessons_course_id 
+            ON course_lessons (course_id, order_index);
+        """)
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Ошибка создания таблицы уроков: {e}")
+        return False
+
+def get_course_by_id(course_id: int):
+    """Получить курс по ID"""
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT id, name, description, cover_image_url
+            FROM courses 
+            WHERE id = %s AND is_published = true
+        """, (course_id,))
+        
+        course = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        return course
+    except Exception as e:
+        print(f"Ошибка получения курса: {e}")
+        return None
+
+def get_course_lessons(course_id: int):
+    """Получить все уроки курса"""
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT id, title, description, lesson_type, order_index, 
+                   duration_minutes, is_published, created_at
+            FROM course_lessons 
+            WHERE course_id = %s 
+            ORDER BY order_index, created_at
+        """, (course_id,))
+        
+        lessons = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        return lessons
+    except Exception as e:
+        print(f"Ошибка получения уроков: {e}")
+        return []
+
+def render_lessons_list(course, lessons):
+    """Рендер списка уроков курса"""
+    if not lessons:
+        lessons_content = """
+        <div class="empty-state">
+            <h3>📖 Уроки еще не созданы</h3>
+            <p>Начните создавать уроки для этого курса</p>
+            <a href="/admin/courses/{course_id}/lessons/new" class="btn">+ Создать первый урок</a>
+        </div>
+        """.format(course_id=course['id'])
+    else:
+        items_html = ""
+        for lesson in lessons:
+            lesson_type_icons = {
+                'text': '📄',
+                'video': '🎥', 
+                'interactive': '⚡',
+                'quiz': '❓'
+            }
+            
+            icon = lesson_type_icons.get(lesson['lesson_type'], '📄')
+            status = "Опубликован" if lesson['is_published'] else "Черновик"
+            
+            items_html += f"""
+            <div class="lesson-item">
+                <div style="display: flex; align-items: center;">
+                    <div class="drag-handle">≡</div>
+                    <div class="lesson-info">
+                        <h3>{icon} {lesson['title']}</h3>
+                        <div class="lesson-meta">
+                            #{lesson['order_index']} • {lesson['duration_minutes']} мин • {status}
+                        </div>
+                    </div>
+                </div>
+                <div class="lesson-actions">
+                    <a href="/admin/courses/{course['id']}/lessons/{lesson['id']}/edit" 
+                       class="btn btn-small btn-secondary">Изменить</a>
+                    <a href="/admin/courses/{course['id']}/lessons/{lesson['id']}/delete" 
+                       class="btn btn-small btn-danger" 
+                       onclick="return confirm('Удалить урок?')">Удалить</a>
+                </div>
+            </div>
+            """
+        
+        lessons_content = f'<div class="lessons-list">{items_html}</div>'
+    
+    course_initial = course['name'][:1].upper() if course['name'] else 'К'
+    course_description = course['description'] or 'Описание курса'
+    
+    return LESSONS_LIST_TEMPLATE.format(
+        course_id=course['id'],
+        course_name=course['name'],
+        course_initial=course_initial,
+        course_description=course_description,
+        lessons_content=lessons_content
+    )
+
+def render_lesson_form(course, lesson=None, form_title="Новый урок"):
+    """Рендер формы урока"""
+    template = LESSON_FORM_TEMPLATE.replace("{form_title}", form_title)
+    template = template.replace("{course_id}", str(course['id']))
+    template = template.replace("{course_name}", course['name'])
+    
+    if lesson:
+        template = template.replace("{title}", lesson.get('title', ''))
+        template = template.replace("{description}", lesson.get('description', ''))
+        template = template.replace("{content}", lesson.get('content', ''))
+        template = template.replace("{order_index}", str(lesson.get('order_index', 1)))
+        template = template.replace("{duration_minutes}", str(lesson.get('duration_minutes', 15)))
+        
+        # Выбранный тип урока
+        lesson_type = lesson.get('lesson_type', 'text')
+        for ltype in ['text', 'video', 'interactive', 'quiz']:
+            selected = "selected" if lesson_type == ltype else ""
+            template = template.replace(f"{{{ltype}_selected}}", selected)
+    else:
+        # Значения по умолчанию
+        template = template.replace("{title}", "")
+        template = template.replace("{description}", "")
+        template = template.replace("{content}", "")
+        template = template.replace("{order_index}", "1")
+        template = template.replace("{duration_minutes}", "15")
+        template = template.replace("{text_selected}", "selected")
+        for ltype in ['video', 'interactive', 'quiz']:
+            template = template.replace(f"{{{ltype}_selected}}", "")
+    
+    return template
+
+# --- НОВЫЕ МАРШРУТЫ ДЛЯ УРОКОВ ---
+
+@app.get("/admin/courses/{course_id}/lessons", response_class=HTMLResponse)
+async def list_course_lessons(course_id: int):
+    """Список уроков курса"""
+    try:
+        ensure_lessons_table_exists()
+        
+        course = get_course_by_id(course_id)
+        if not course:
+            raise HTTPException(status_code=404, detail="Курс не найден")
+        
+        lessons = get_course_lessons(course_id)
+        
+        return HTMLResponse(render_lessons_list(course, lessons))
+    except HTTPException:
+        raise
+    except Exception as e:
+        return HTMLResponse(f"""
+        <h1>Ошибка: {str(e)}</h1>
+        <a href='/admin/courses'>← Назад к курсам</a>
+        """, status_code=500)
+
+@app.get("/admin/courses/{course_id}/lessons/new", response_class=HTMLResponse) 
+async def new_lesson(course_id: int):
+    """Форма создания нового урока"""
+    course = get_course_by_id(course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Курс не найден")
+    
+    return HTMLResponse(render_lesson_form(course))
+
+@app.post("/admin/courses/{course_id}/lessons/new")
+async def create_lesson(
+    course_id: int,
+    title: str = Form(...),
+    description: str = Form(""),
+    content: str = Form(""),
+    lesson_type: str = Form("text"),
+    order_index: int = Form(1),
+    duration_minutes: int = Form(15)
+):
+    """Создать новый урок"""
+    try:
+        ensure_lessons_table_exists()
+        
+        # Проверяем существование курса
+        course = get_course_by_id(course_id)
+        if not course:
+            raise HTTPException(status_code=404, detail="Курс не найден")
+        
+        conn = get_db()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            INSERT INTO course_lessons 
+            (course_id, title, description, content, lesson_type, order_index, duration_minutes)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (course_id, title, description, content, lesson_type, order_index, duration_minutes))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return RedirectResponse(url=f"/admin/courses/{course_id}/lessons", status_code=302)
+        
+    except Exception as e:
+        return HTMLResponse(f"""
+        <h1>Ошибка: {str(e)}</h1>
+        <p>Не удалось создать урок.</p>
+        <a href='/admin/courses/{course_id}/lessons'>← Назад к урокам</a>
+        """, status_code=500)
+
+@app.get("/admin/courses/{course_id}/lessons/{lesson_id}/edit", response_class=HTMLResponse)
+async def edit_lesson(course_id: int, lesson_id: int):
+    """Форма редактирования урока"""
+    course = get_course_by_id(course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Курс не найден")
+    
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT * FROM course_lessons 
+            WHERE id = %s AND course_id = %s
+        """, (lesson_id, course_id))
+        
+        lesson = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if not lesson:
+            raise HTTPException(status_code=404, detail="Урок не найден")
+        
+        return HTMLResponse(render_lesson_form(course, lesson, "Редактировать урок"))
+        
+    except Exception as e:
+        return HTMLResponse(f"""
+        <h1>Ошибка: {str(e)}</h1>
+        <a href='/admin/courses/{course_id}/lessons'>← Назад к урокам</a>
+        """, status_code=500)
+
+@app.post("/admin/courses/{course_id}/lessons/{lesson_id}/edit")
+async def update_lesson(
+    course_id: int,
+    lesson_id: int,
+    title: str = Form(...),
+    description: str = Form(""),
+    content: str = Form(""),
+    lesson_type: str = Form("text"),
+    order_index: int = Form(1),
+    duration_minutes: int = Form(15)
+):
+    """Обновить урок"""
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            UPDATE course_lessons 
+            SET title=%s, description=%s, content=%s, lesson_type=%s, 
+                order_index=%s, duration_minutes=%s, updated_at=NOW()
+            WHERE id=%s AND course_id=%s
+        """, (title, description, content, lesson_type, order_index, duration_minutes, lesson_id, course_id))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return RedirectResponse(url=f"/admin/courses/{course_id}/lessons", status_code=302)
+        
+    except Exception as e:
+        return HTMLResponse(f"""
+        <h1>Ошибка: {str(e)}</h1>
+        <a href='/admin/courses/{course_id}/lessons'>← Назад к урокам</a>
+        """, status_code=500)
+
+@app.get("/admin/courses/{course_id}/lessons/{lesson_id}/delete")
+async def delete_lesson(course_id: int, lesson_id: int):
+    """Удалить урок"""
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            DELETE FROM course_lessons 
+            WHERE id = %s AND course_id = %s
+        """, (lesson_id, course_id))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return RedirectResponse(url=f"/admin/courses/{course_id}/lessons", status_code=302)
+        
+    except Exception as e:
+        return HTMLResponse(f"""
+        <h1>Ошибка: {str(e)}</h1>
+        <a href='/admin/courses/{course_id}/lessons'>← Назад к урокам</a>
+        """, status_code=500)
 
 if __name__ == "__main__":
     import uvicorn
