@@ -110,9 +110,6 @@ def setup_database():
     cur.execute("""
         CREATE INDEX IF NOT EXISTS idx_messages_date_user_id ON messages (message_date, user_id);
     """)
-    cur.execute("""
-        CREATE INDEX IF NOT EXISTS idx_lessons_course_ref_id ON lessons (course_ref_id);
-    """)
     
     # 8. Добавляем недостающие колонки в существующие таблицы
     try:
@@ -132,7 +129,7 @@ def setup_database():
         
         # Добавляем внешний ключ если его еще нет
         cur.execute("""
-            DO $$ 
+            DO $ 
             BEGIN
                 IF NOT EXISTS (
                     SELECT 1 FROM information_schema.table_constraints 
@@ -141,7 +138,12 @@ def setup_database():
                     ALTER TABLE lessons ADD CONSTRAINT lessons_course_ref_id_fkey 
                     FOREIGN KEY (course_ref_id) REFERENCES courses(id) ON DELETE CASCADE;
                 END IF;
-            END $$;
+            END $;
+        """)
+        
+        # 9. Создаем индекс ПОСЛЕ добавления колонки
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_lessons_course_ref_id ON lessons (course_ref_id);
         """)
         
         logging.info("Database schema updated successfully with courses table")
