@@ -12,29 +12,28 @@ const LessonListItem = ({ lesson, isUnlocked, onLessonClick }) => {
       className={`lesson-list-item ${!isUnlocked ? 'locked' : ''} ${lesson.completed ? 'completed' : ''}`}
       onClick={() => isUnlocked && onLessonClick(lesson.id)}
     >
-      {/* lesson.sort_order теперь будет использоваться для CSS counter, не рендерим его явно тут */}
+      <span className="lesson-item-number">{lesson.sort_order}.</span> {/* Явная нумерация урока */}
       <span className="lesson-item-title">{lesson.title}</span>
+      {/* Иконки состояния (замок/галочка) можно добавить здесь, если нужны */}
     </li>
   );
 };
 
 // Компонент секции курса (если секции нужны для группировки уроков)
 const CourseSection = ({ section, onLessonClick, userRankLevel }) => {
-  // Логика разблокировки секции (если применимо)
   const isSectionUnlocked = true; // Пока всегда true, если курс доступен
   
   return (
     <div className="course-section-group">
-      {/* Заголовок секции - если он нужен для разделения, но менее заметный */}
+      {/* Заголовок секции, если он нужен для разделения, но менее заметный */}
       {section.title && <h3 className="course-section-title">{section.title}</h3>}
       
-      {/* Нумерованный список уроков */}
       <ol className="section-lessons-list">
         {section.lessons.map((lesson) => (
           <LessonListItem 
             key={lesson.id}
             lesson={lesson}
-            isUnlocked={isSectionUnlocked && (lesson.rank_required <= userRankLevel)} // Пример логики разблокировки урока
+            isUnlocked={isSectionUnlocked && (lesson.rank_required <= userRankLevel)} 
             onLessonClick={onLessonClick}
           />
         ))}
@@ -47,8 +46,8 @@ function CourseOverview() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = true;
+  const [error, setError] = null;
   const [userRankLevel, setUserRankLevel] = useState(1); 
 
   // Настройка Telegram BackButton
@@ -142,15 +141,16 @@ function CourseOverview() {
 
   return (
     <div className="course-overview-container">
-      {/* Заголовок курса (как на скриншоте KontentEngine.io) */}
+      {/* Заголовок курса и прогресс-бар */}
       <div className="course-simple-header">
         <h1 className="course-simple-title">{course.title}</h1>
-        {/* Прогресс-бар (как на скриншоте) */}
+        {/* Прогресс-бар с текстом внутри */}
         <div className="course-simple-progress-bar">
           <div 
             className="course-simple-progress-fill" 
             style={{ width: `${progressPercentage}%` }}
           ></div>
+          <span className="progress-percentage-text">{progressPercentage}%</span>
         </div>
       </div>
 
