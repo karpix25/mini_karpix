@@ -1,10 +1,12 @@
 import asyncio
 import os
 from tortoise import Tortoise
-# Мы импортируем модели из нашего основного файла админки
-from main import AdminUser 
-# Импортируем функцию для хеширования пароля, чтобы она была такой же, как при логине
-from fastapi_admin.providers.login import get_password_hash
+from main import AdminUser # Импортируем нашу модель админа
+# !!! ИСПРАВЛЕННЫЙ ИМПОРТ ДЛЯ ХЕШИРОВАНИЯ ПАРОЛЕЙ !!!
+from passlib.context import CryptContext 
+
+# Создаем контекст для работы с паролями (используем bcrypt, как делает FastAPI-Admin)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Асинхронная функция для создания админа
 async def main():
@@ -20,7 +22,7 @@ async def main():
     # Инициализируем подключение к базе
     await Tortoise.init(
         db_url=DATABASE_URL,
-        modules={"models": ["main"]}
+        modules={"models": ["main"]} # Указываем, что модели в файле main.py
     )
     # Эта команда создает таблицу 'admins' в базе, если она еще не создана
     await Tortoise.generate_schemas()
@@ -28,14 +30,14 @@ async def main():
 
     # --- ЗАДАЙТЕ ВАШ ЛОГИН И ПАРОЛЬ ЗДЕСЬ ---
     username = "nadaraya"
-    password = "C@rlo1822" # Рекомендую поменять на что-то другое после первого входа
+    password = "C@rlo1822" # !!! ПОЖАЛУЙСТА, ОБЯЗАТЕЛЬНО ПОМЕНЯЙТЕ ЭТОТ ПАРОЛЬ НА ДРУГОЙ, СЛОЖНЫЙ И УНИКАЛЬНЫЙ !!!
     
     print(f"Проверка существования администратора '{username}'...")
 
     # Проверяем, существует ли уже пользователь с таким именем
     if not await AdminUser.filter(username=username).exists():
-        # Хешируем пароль для безопасного хранения
-        password_hash = get_password_hash(password)
+        # !!! ИСПРАВЛЕННЫЙ МЕТОД ХЕШИРОВАНИЯ ПАРОЛЯ !!!
+        password_hash = pwd_context.hash(password)
         
         # Создаем нового админа в таблице 'admins'
         await AdminUser.create(username=username, password=password_hash)
