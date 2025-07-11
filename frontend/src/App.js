@@ -1,61 +1,44 @@
-/* Переопределяем базовые стили для светлой темы */
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  /* Используем Telegram переменные для фона и текста, с белым/светлым по умолчанию */
-  background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); /* Очень светло-серый для общего фона */
-  color: var(--tg-theme-text-color, #1A1A1A); /* Темный текст для светлой темы */
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom'; // <-- Добавлена точка с запятой
+import './App.css'; // <-- Добавлена точка с запятой
+import Profile from './Profile'; // <-- Добавлена точка с запятой
+import Content from './Content'; // <-- Добавлена точка с запятой
+import CourseOverview from './CourseOverview'; // <-- Добавлена точка с запятой
+import LessonReader from './LessonReader'; // <-- Добавлена точка с запятой
+import ArticleReader from './ArticleReader'; // <-- Добавлена точка с запятой (если он будет использоваться)
+
+function App() {
+  return (
+    <Router>
+      <div className="App">
+        <div className="content">
+          <Routes>
+            <Route path="/" element={<Profile />} />
+            <Route path="/leaderboard" element={<Profile />} />
+            
+            <Route path="/content" element={<Content />} />
+            
+            <Route path="/course/:courseId" element={<CourseOverview />} />
+            <Route path="/course/:courseId/lesson/:lessonId" element={<LessonReader />} />
+            
+            <Route path="/article/:articleId" element={<ArticleReader />} />
+          </Routes>
+        </div>
+        
+        <div className="nav-tabs">
+            <NavLink to="/" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
+                Профиль
+            </NavLink>
+            <NavLink to="/leaderboard" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
+                Лидеры
+            </NavLink>
+            <NavLink to="/content" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
+                Контент
+            </NavLink>
+        </div>
+      </div>
+    </Router>
+  );
 }
 
-/* Стили для основных элементов приложения */
-.App {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh; /* Минимальная высота, чтобы контент занимал весь экран */
-  background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); /* Чтобы основной контейнер тоже был светлым */
-}
-
-.content {
-  flex-grow: 1; /* Основной контент будет расти, чтобы занять все доступное место */
-  /* Убрали padding отсюда, так как он будет специфичен для каждого компонента */
-  overflow-y: auto; /* Позволяет прокручивать контент, если он не влезает */
-  -webkit-overflow-scrolling: touch; /* Для более плавного скролла на iOS */
-}
-
-/* Нижняя навигационная панель */
-.nav-tabs {
-  display: flex;
-  justify-content: space-around;
-  background-color: var(--tg-theme-bg-color, #FFFFFF); /* Белый фон для навигации */
-  padding: 10px 0;
-  border-top: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); /* Светлый разделитель */
-  flex-shrink: 0; /* Навигация не будет сжиматься */
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05); /* Легкая тень сверху */
-}
-
-.nav-tab {
-  padding: 10px 20px;
-  cursor: pointer;
-  color: var(--tg-theme-hint-color, #6C757D); /* Светло-серый для неактивных вкладок */
-  font-weight: 500; /* Немного менее жирный, чем bold */
-  text-decoration: none;
-  border-bottom: 3px solid transparent;
-  transition: color 0.2s, border-bottom-color 0.2s;
-  -webkit-tap-highlight-color: transparent; /* Убираем синюю подсветку при тапе на iOS */
-}
-
-.nav-tab:hover {
-    color: var(--tg-theme-text-color, #333333); /* Чуть темнее при наведении */
-}
-
-.nav-tab.active {
-  color: var(--tg-theme-link-color, #007BFF); /* Ярко-синий для активной вкладки */
-  border-bottom-color: var(--tg-theme-link-color, #007BFF); /* Синяя линия под активной вкладкой */
-}
-
-/* УБРАНЫ СТИЛИ .leaderboard-list и .leaderboard-item отсюда, они должны быть в Leaderboard.css */
+export default App;
