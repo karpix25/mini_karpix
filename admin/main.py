@@ -90,6 +90,11 @@ COURSES_LIST_TEMPLATE = """
             border-bottom: 2px solid transparent; 
         }
         .nav-tab.active { color: #007bff; border-bottom-color: #007bff; }
+        
+        .debug-info { 
+            background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; 
+            padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; 
+        }
     </style>
 </head>
 <body>
@@ -103,6 +108,8 @@ COURSES_LIST_TEMPLATE = """
             <a href="/admin/courses" class="nav-tab active">Курсы</a>
             <a href="/admin/lessons" class="nav-tab">Все уроки</a>
         </div>
+        
+        {debug_info}
         
         <div class="courses-grid">
             <!-- Карточка добавления нового курса -->
@@ -147,7 +154,7 @@ COURSE_FORM_TEMPLATE = """
         }
         .form-group input, .form-group textarea, .form-group select { 
             width: 100%; padding: 12px; border: 1px solid #dee2e6; 
-            border-radius: 8px; font-size: 14px; 
+            border-radius: 8px; font-size: 14px; box-sizing: border-box;
         }
         .form-group input:focus, .form-group textarea:focus, .form-group select:focus { 
             outline: none; border-color: #007bff; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); 
@@ -291,10 +298,47 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 def get_db():
     conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+    return conn
+
+def ensure_tables_exist():
+    """Убеждаемся что все необходимые таблицы существуют"""
+    conn = get_db()
+    cur = conn.cursor()
+    
     try:
-        return conn
+        # Создаем таблицу courses
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS courses (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                cover_image_url TEXT,
+                access_type VARCHAR(20) DEFAULT 'level',
+                access_level INT DEFAULT 1,
+                access_days INT,
+                is_published BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            );
+        """)
+        
+        # Создаем таблицу admins
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS admins (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                password VARCHAR(128) NOT NULL
+            );
+        """)
+        
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Ошибка создания таблиц: {e}")
+        return False
     finally:
-        pass
+        cur.close()
+        conn.close()
 
 def check_admin_auth(username: str, password: str) -> bool:
     """Проверка логина/пароля администратора"""
@@ -312,7 +356,7 @@ def check_admin_auth(username: str, password: str) -> bool:
         return admin['password'] == password_hash or password == "C@rlo1822"
     return False
 
-def render_courses_list(courses):
+def render_courses_list(courses, debug_info=""):
     """Рендер списка курсов"""
     cards_html = ""
     
@@ -353,7 +397,9 @@ def render_courses_list(courses):
         </div>
         """
     
-    return COURSES_LIST_TEMPLATE.replace("{courses_cards}", cards_html)
+    debug_html = f'<div class="debug-info">{debug_info}</div>' if debug_info else ""
+    
+    return COURSES_LIST_TEMPLATE.replace("{courses_cards}", cards_html).replace("{debug_info}", debug_html)
 
 def render_course_form(course=None, form_title="Новый курс"):
     """Рендер формы курса"""
@@ -396,37 +442,34 @@ async def admin_root():
 @app.get("/admin/courses", response_class=HTMLResponse)
 async def list_courses():
     try:
+        # Убеждаемся что таблицы существуют
+        tables_created = ensure_tables_exist()
+        
         conn = get_db()
         cur = conn.cursor()
         
-        # Создаем таблицу courses если её нет
+        # Проверяем существует ли таблица
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS courses (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                description TEXT,
-                cover_image_url TEXT,
-                access_type VARCHAR(20) DEFAULT 'level',
-                access_level INT DEFAULT 1,
-                access_days INT,
-                is_published BOOLEAN DEFAULT TRUE,
-                created_at TIMESTAMPTZ DEFAULT NOW(),
-                updated_at TIMESTAMPTZ DEFAULT NOW()
-            );
+            SELECT table_name FROM information_schema.tables 
+            WHERE table_schema = 'public' AND table_name = 'courses'
         """)
+        table_exists = cur.fetchone()
         
         cur.execute("SELECT * FROM courses ORDER BY created_at DESC")
         courses = cur.fetchall()
         cur.close()
         conn.close()
         
-        return HTMLResponse(render_courses_list(courses))
+        debug_info = f"🔧 Debug: Таблица courses {'✅ найдена' if table_exists else '❌ НЕ найдена'}, курсов: {len(courses)}, таблицы {'✅ созданы' if tables_created else '❌ ошибка создания'}"
+        
+        return HTMLResponse(render_courses_list(courses, debug_info))
     except Exception as e:
         return HTMLResponse(f"""
-        <h1>Ошибка: {str(e)}</h1>
-        <p>Проверьте что таблица courses создана в базе данных.</p>
+        <h1>Ошибка базы данных: {str(e)}</h1>
+        <p>Попробуйте обновить страницу через несколько секунд.</p>
+        <a href='/admin/courses'>🔄 Обновить</a> | 
         <a href='/admin/lessons'>→ Старые уроки</a>
-        """)
+        """, status_code=500)
 
 @app.get("/admin/courses/new", response_class=HTMLResponse)
 async def new_course():
@@ -439,29 +482,40 @@ async def create_course(
     cover_image_url: str = Form(""),
     access_type: str = Form("level"),
     access_level: int = Form(1),
-    access_days: str = Form("")  # Изменили на str
+    access_days: str = Form("")
 ):
-    conn = get_db()
-    cur = conn.cursor()
-    
-    # Преобразуем access_days в int или None
-    days_value = None
-    if access_days and access_days.strip():
-        try:
-            days_value = int(access_days)
-        except ValueError:
-            days_value = None
-    
-    cur.execute("""
-        INSERT INTO courses (name, description, cover_image_url, access_type, access_level, access_days)
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """, (name, description, cover_image_url, access_type, access_level, days_value))
-    
-    conn.commit()
-    cur.close()
-    conn.close()
-    
-    return RedirectResponse(url="/admin/courses", status_code=302)
+    try:
+        # КРИТИЧНО: убеждаемся что таблицы существуют ПЕРЕД вставкой
+        ensure_tables_exist()
+        
+        conn = get_db()
+        cur = conn.cursor()
+        
+        # Преобразуем access_days в int или None
+        days_value = None
+        if access_days and access_days.strip():
+            try:
+                days_value = int(access_days)
+            except ValueError:
+                days_value = None
+        
+        cur.execute("""
+            INSERT INTO courses (name, description, cover_image_url, access_type, access_level, access_days)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (name, description, cover_image_url, access_type, access_level, days_value))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return RedirectResponse(url="/admin/courses", status_code=302)
+        
+    except Exception as e:
+        return HTMLResponse(f"""
+        <h1>Ошибка: {str(e)}</h1>
+        <p>Не удалось создать курс. Проверьте данные.</p>
+        <a href='/admin/courses'>← Назад к курсам</a>
+        """, status_code=500)
 
 @app.get("/admin/courses/{course_id}/edit", response_class=HTMLResponse)
 async def edit_course(course_id: int):
@@ -485,7 +539,7 @@ async def update_course(
     cover_image_url: str = Form(""),
     access_type: str = Form("level"),
     access_level: int = Form(1),
-    access_days: str = Form("")  # Изменили на str
+    access_days: str = Form("")
 ):
     conn = get_db()
     cur = conn.cursor()
