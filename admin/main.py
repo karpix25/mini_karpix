@@ -36,10 +36,6 @@ class AdminUser(Model):
     def __str__(self): 
         return self.username
 
-# Модель для логов администратора - НЕ НУЖНА для базовой работы
-# class AdminLog(AbstractAdminLog):
-#     pass
-
 app = FastAPI()
 
 @app.on_event("startup")
@@ -72,7 +68,7 @@ async def startup():
                     "section_id", 
                     "lesson_slug", 
                     "title",
-                    "content",  # Обычное текстовое поле без кастомизации
+                    "content",
                     "sort_order", 
                     "created_at", 
                     "updated_at",
