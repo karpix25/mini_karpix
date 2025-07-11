@@ -26,7 +26,16 @@ services:
     build: ./frontend
     restart: unless-stopped
 
-  # --- НАША НОВАЯ БАЗА ДАННЫХ ВНУТРИ ПРОЕКТА ---
+  # !!! --- НАШ НОВЫЙ СЕРВИС АДМИНКИ --- !!!
+  admin:
+    build: ./admin
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    depends_on:
+      - database
+
+  # --- НАША БАЗА ДАННЫХ ВНУТРИ ПРОЕКТА ---
   database:
     image: postgres:17 # Используем новую версию
     restart: unless-stopped
