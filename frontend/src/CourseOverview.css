@@ -57,7 +57,8 @@
 
 /* ===== СПИСОК СЕКЦИЙ/УРОКОВ ===== */
 .course-sections-list-wrapper {
-  padding: 0 20px; /* Отступы по бокам, как на скриншоте */
+  /* УБИРАЕМ padding отсюда, чтобы он не мешал выравниванию */
+  padding: 0; 
 }
 
 /* Обертка для каждой секции (без фона) */
@@ -70,19 +71,19 @@
     display: flex;
     justify-content: flex-start; /* Выравнивание по левому краю */
     align-items: center;
-    padding: 20px 0; /* Отступы для хедера секции */
+    padding: 20px 20px; /* НОВОЕ: padding для хедера секции, включая боковые отступы */
     cursor: pointer;
     border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); /* Разделитель */
     transition: background-color 0.2s ease;
-    /* text-align: left; - уже установлено на родителе, не нужно здесь */
+    text-align: left; 
 }
 .course-section-header:hover {
     background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); /* Легкий ховер */
 }
 
-.section-info { /* Обертка для текста заголовка секции */
+.section-info { 
     flex-grow: 1; 
-    /* УБРАНО: margin-left: 10px; */ /* ЭТОТ МАРДЖИН УБИРАЕМ */
+    margin-left: 10px; /* Отступ текста от стрелки/иконки */
 }
 
 .course-section-title-text {
@@ -95,36 +96,36 @@
 /* Стилизация новой иконки переключения */
 .toggle-icon-wrapper {
     flex-shrink: 0;
-    width: 24px; /* Размер контейнера для SVG */
+    width: 24px; 
     height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: transform 0.2s ease;
-    margin-right: 10px; /* НОВОЕ: Отступ от заголовка */
+    /* margin-right: 10px; - уже установлено, если нужно */
 }
 
 .toggle-icon {
-    width: 16px; /* Размер самой SVG иконки */
+    width: 16px; 
     height: 16px;
-    stroke: var(--tg-theme-hint-color, #6C757D); /* Цвет иконки, адаптируется */
-    stroke-width: 2; /* Толщина линии SVG */
+    stroke: var(--tg-theme-hint-color, #6C757D); 
+    stroke-width: 2; 
 }
 
 .toggle-icon-wrapper.expanded .toggle-icon {
-    transform: rotate(180deg); /* Поворот при раскрытии */
+    transform: rotate(180deg); 
 }
 
 /* Стиль для списка уроков внутри секции */
 .section-lessons-list { 
   list-style: none; /* Убираем дефолтные маркеры */
-  padding-left: 0; 
+  padding-left: 0; /* Убираем дефолтный padding OL */
   margin: 0;
 }
 
 /* Стили для отдельных элементов списка уроков */
 .lesson-list-item { 
-  padding: 12px 0; 
+  padding: 12px 20px; /* НОВОЕ: padding для элемента списка, включая боковые отступы */
   border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); /* Тонкий разделитель */
   font-size: 16px;
   color: var(--tg-theme-text-color, #1A1A1A); 
@@ -158,8 +159,7 @@
     flex-shrink: 0; 
     width: 30px; 
     text-align: left; /* Выравнивание номера по левому краю */
-    /* НОВОЕ: Уменьшаем или убираем margin-right, чтобы номер был ближе к левому краю */
-    margin-right: 5px; /* Уменьшаем отступ от заголовка, чтобы номер был ближе к левому краю */
+    margin-right: 10px; /* Отступ от заголовка */
     font-weight: 600; 
     color: var(--tg-theme-text-color, #1A1A1A); 
 }
@@ -231,10 +231,16 @@
   }
   .lesson-list-item {
     font-size: 15px;
-    padding: 10px 0;
+    padding: 10px 0; /* padding тут будет перекрыт общим padding */
   }
   .course-sections-list-wrapper {
-    padding: 16px; 
+    padding: 0; /* НОВОЕ: убираем padding и на мобильных */
+  }
+  .course-section-header {
+    padding: 16px 16px; /* НОВОЕ: уменьшаем padding на мобильных */
+  }
+  .lesson-list-item {
+    padding: 10px 16px; /* НОВОЕ: уменьшаем padding на мобильных */
   }
   .lesson-item-number {
     width: 25px; 
