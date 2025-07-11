@@ -25,7 +25,7 @@ const CourseSection = ({ section, onLessonClick, userRankLevel }) => {
   
   return (
     <div className="course-section-group">
-      {/* Заголовок секции, если он нужен для разделения, но менее заметный */}
+      {/* Заголовок секции - если он нужен для разделения, но менее заметный */}
       {section.title && <h3 className="course-section-title">{section.title}</h3>}
       
       <ol className="section-lessons-list">
@@ -46,8 +46,8 @@ function CourseOverview() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
-  const [loading, setLoading] = true;
-  const [error, setError] = null;
+  const [loading, setLoading] = useState(true); // <-- ИСПРАВЛЕНО ЗДЕСЬ!
+  const [error, setError] = useState(null);
   const [userRankLevel, setUserRankLevel] = useState(1); 
 
   // Настройка Telegram BackButton
@@ -169,4 +169,17 @@ function CourseOverview() {
   );
 }
 
-export default CourseOverview;
+export default CourseOverview;```
+
+### Что нужно сделать:
+
+1.  **Замените содержимое `src/CourseOverview.js`** на предоставленный выше **исправленный** код.
+2.  **Убедитесь, что `src/CourseOverview.css` соответствует последней версии**, которую я вам давал ранее (где мы убирали `min-height` и настраивали прогресс-бар). Если есть сомнения, перешлите мне его еще раз, чтобы я мог удостовериться.
+3.  **Выполните ПОЛНУЮ ОЧИСТКУ Docker и пересборку** (это очень важно):
+    ```bash
+    docker-compose down --rmi all
+    docker-compose up -d --build
+    ```
+4.  **ОЧИСТИТЕ КЕШ БРАУЗЕРА** или используйте режим инкогнито.
+
+Я уверен, что это исправление решит `TypeError` и позволит вам увидеть страницу обзора курса с последними изменениями дизайна. Ещё раз приношу извинения за допущенную опечатку!
