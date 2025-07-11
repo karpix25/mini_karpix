@@ -1,16 +1,18 @@
 /* Переопределяем базовые стили для светлой темы */
-/* Переопределяем базовые стили для светлой темы */
-body {
-  margin: 0;
+html, body { /* Применяем стили и к html, и к body */
+  margin: 0 !important; /* Важно, чтобы избежать любых внешних марджинов */
+  padding: 0 !important; /* Убираем любой дефолтный padding */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* ВРЕМЕННО ДЛЯ ТЕСТА: */
-  background-color: red !important; /* <--- ИЗМЕНИТЕ НА ЭТО */
-  /* background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); */ /* Закомментируйте или удалите эту строку */
-  color: var(--tg-theme-text-color, #1A1A1A); 
+  
+  /* Используем Telegram переменные для фона и текста, с БЕЛЫМ по умолчанию */
+  background-color: var(--tg-theme-bg-color, #FFFFFF) !important; /* Основной фон - белый, !important */
+  color: var(--tg-theme-text-color, #1A1A1A) !important; /* Основной текст - темный, !important */
+  min-height: 100vh; /* Убеждаемся, что body занимает всю высоту */
+  overflow-x: hidden; /* Предотвращаем горизонтальную прокрутку */
 }
 
 /* Стили для основных элементов приложения */
@@ -19,53 +21,53 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh; /* Минимальная высота, чтобы контент занимал весь экран */
-  background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); /* Чтобы основной контейнер тоже был светлым */
+  /* Убеждаемся, что фон App тоже белый, чтобы покрыть все */
+  background-color: var(--tg-theme-bg-color, #FFFFFF) !important; /* Белый фон, !important */
+  color: var(--tg-theme-text-color, #1A1A1A) !important; /* Темный текст, !important */
 }
 
 .content {
   flex-grow: 1; /* Основной контент будет расти, чтобы занять все доступное место */
-  /* Убрали padding отсюда, так как он будет специфичен для каждого компонента */
   overflow-y: auto; /* Позволяет прокручивать контент, если он не влезает */
   -webkit-overflow-scrolling: touch; /* Для более плавного скролла на iOS */
-  /* НОВОЕ: Отступ снизу, чтобы контент не перекрывался фиксированной навигацией */
-  padding-bottom: 70px; /* Высота вашей навигации + немного отступа */
+  padding-bottom: 70px; /* Отступ снизу для фиксированной навигации */
+  background-color: var(--tg-theme-secondary-bg-color, #F8F9FA) !important; /* Светло-серый для области контента, !important */
 }
 
 /* Нижняя навигационная панель */
 .nav-tabs {
   display: flex;
   justify-content: space-around;
-  background-color: var(--tg-theme-bg-color, #FFFFFF); /* Белый фон для навигации */
+  background-color: var(--tg-theme-bg-color, #FFFFFF) !important; /* Белый фон, !important */
   padding: 10px 0;
-  border-top: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); /* Светлый разделитель */
-  flex-shrink: 0; /* Навигация не будет сжиматься */
+  border-top: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF) !important; /* Светлый разделитель, !important */
+  flex-shrink: 0; 
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05); /* Легкая тень сверху */
 
-  /* НОВОЕ: Фиксируем внизу */
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   width: 100%;
-  z-index: 1000; /* Убедимся, что навигация поверх всего */
+  z-index: 1000; 
 }
 
 .nav-tab {
   padding: 10px 20px;
   cursor: pointer;
   color: var(--tg-theme-hint-color, #6C757D); /* Светло-серый для неактивных вкладок */
-  font-weight: 500; /* Немного менее жирный, чем bold */
+  font-weight: 500; 
   text-decoration: none;
   border-bottom: 3px solid transparent;
   transition: color 0.2s, border-bottom-color 0.2s;
-  -webkit-tap-highlight-color: transparent; /* Убираем синюю подсветку при тапе на iOS */
+  -webkit-tap-highlight-color: transparent; 
 }
 
 .nav-tab:hover {
-    color: var(--tg-theme-text-color, #333333); /* Чуть темнее при наведении */
+    color: var(--tg-theme-text-color, #333333); 
 }
 
 .nav-tab.active {
-  color: var(--tg-theme-link-color, #007BFF); /* Ярко-синий для активной вкладки */
-  border-bottom-color: var(--tg-theme-link-color, #007BFF); /* Синяя линия под активной вкладкой */
+  color: var(--tg-theme-link-color, #007BFF); 
+  border-bottom-color: var(--tg-theme-link-color, #007BFF); 
 }
