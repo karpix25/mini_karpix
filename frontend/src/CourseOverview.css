@@ -1,11 +1,11 @@
 /* ===== ОСНОВНОЙ КОНТЕЙНЕР ===== */
 .course-overview-container {
-  /* Убрали min-height, чтобы не было лишней прокрутки если контента мало */
-  /* min-height: 100vh; */ 
   background-color: var(--tg-theme-bg-color, #FFFFFF); /* Адаптивный фон */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   padding: 0; 
   color: var(--tg-theme-text-color, #1A1A1A); /* Адаптивный текст */
+  /* НОВОЕ: min-height для правильной прокрутки, если контента мало */
+  min-height: calc(100vh - var(--tg-theme-header-height, 56px) - var(--tg-theme-footer-height, 56px)); /* Высота экрана минус хедеры */
 }
 
 /* ===== ЗАГОЛОВОК КУРСА И ПРОГРЕСС-БАР (ПРОСТОЙ ВЕРХНИЙ ХЕДЕР) ===== */
@@ -17,42 +17,42 @@
 }
 
 .course-simple-title {
-  margin: 0 0 16px 0; /* Увеличили отступ от прогресс-бара */
+  margin: 0 0 16px 0; 
   font-size: 24px;
   font-weight: 700;
-  color: var(--tg-theme-text-color, #1A1A1A); /* Адаптивный текст */
+  color: var(--tg-theme-text-color, #1A1A1A); 
   line-height: 1.3;
 }
 
 /* Стили для нового прогресс-бара */
 .course-simple-progress-bar {
-  height: 28px; /* Высота бара, как на скриншоте */
-  background-color: var(--tg-theme-secondary-bg-color, #E9ECEF); /* Адаптивный фон бара (светло-серый) */
-  border-radius: 14px; /* Округлые края */
+  height: 28px; 
+  background-color: var(--tg-theme-secondary-bg-color, #E9ECEF); 
+  border-radius: 14px; 
   overflow: hidden;
-  position: relative; /* Для позиционирования текста */
-  display: flex; /* Для центрирования текста */
-  align-items: center; /* Центрируем текст по вертикали */
+  position: relative; 
+  display: flex; 
+  align-items: center; 
 }
 
 .course-simple-progress-fill {
   height: 100%;
-  background: var(--tg-theme-link-color, #007BFF); /* Используем link_color для заполнения */
-  border-radius: 14px; /* Округлые края */
+  background: var(--tg-theme-link-color, #007BFF); 
+  border-radius: 14px; 
   transition: width 0.3s ease;
-  position: absolute; /* Позиционируем заполнение абсолютно */
+  position: absolute; 
   left: 0;
   top: 0;
-  z-index: 1; /* Чтобы текст был поверх */
+  z-index: 1; 
 }
 
 .progress-percentage-text {
-  position: relative; /* Чтобы был поверх fill */
+  position: relative; 
   z-index: 2; 
-  font-size: 14px; /* Размер текста */
+  font-size: 14px; 
   font-weight: 600;
-  color: var(--tg-theme-text-color, #1A1A1A); /* Адаптивный цвет текста (темный) */
-  margin-left: 14px; /* Отступ слева, чтобы текст не прижимался к краю */
+  color: var(--tg-theme-text-color, #1A1A1A); 
+  margin-left: 14px; 
 }
 
 
@@ -69,35 +69,44 @@
 /* Заголовок секции с возможностью переключения */
 .course-section-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start; /* ВЫРАВНИВАНИЕ ПО ЛЕВОМУ КРАЮ */
     align-items: center;
     padding: 20px 0; /* Отступы для хедера секции */
     cursor: pointer;
     border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); /* Разделитель */
     transition: background-color 0.2s ease;
-    text-align: left; /* Важно: выравнивание по левому краю */
 }
 .course-section-header:hover {
     background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); /* Легкий ховер */
+}
+
+.section-info { /* НОВАЯ Обертка для текста заголовка секции */
+    flex-grow: 1; /* Занимает оставшееся пространство */
+    margin-left: 10px; /* Отступ текста от стрелки */
 }
 
 .course-section-title-text {
     font-size: 18px;
     font-weight: 600;
     color: var(--tg-theme-text-color, #1A1A1A);
-    margin: 0; 
+    margin: 0; /* Убираем дефолтные марджины */
+    /* text-align: left; - уже установлено на родителе course-section-header */
 }
 
-.section-controls {
-    display: flex;
-    align-items: center;
-    gap: 8px; 
+.section-controls { /* УБРАНО: если там только стрелка, то эта обертка не нужна, стрелка напрямую в course-section-header */
+    /* display: flex; */
+    /* align-items: center; */
+    /* gap: 8px; */ 
 }
 
 .toggle-arrow {
     font-size: 14px; 
     color: var(--tg-theme-hint-color, #6C757D);
     transition: transform 0.2s ease;
+    /* НОВОЕ: для выравнивания стрелки */
+    flex-shrink: 0; /* Не сжимается */
+    width: 20px; /* Фиксированная ширина для стрелки */
+    text-align: center; /* Центрируем стрелку в её колонке */
 }
 .toggle-arrow.expanded {
     transform: rotate(180deg); /* Поворот при раскрытии */
@@ -108,10 +117,6 @@
   list-style: none; /* Убираем дефолтные маркеры */
   padding-left: 0; 
   margin: 0;
-  /* Для адаптации к дизайну Automtable, первый элемент списка в секции
-     может не иметь верхнего бордера, если сама секция уже имеет бордер.
-     Либо можно просто иметь бордеры между всеми элементами списка.
-     На скриншоте Automtable, кажется, нет бордера сверху списка, если секция не раскрыта. */
 }
 
 /* Стили для отдельных элементов списка уроков */
@@ -165,8 +170,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    /* Убрали min-height, чтобы не было лишней прокрутки если контента мало */
-    /* min-height: 100vh; */ 
+    /* min-height убрано, чтобы не было лишней прокрутки */
     padding: 20px;
     text-align: center;
     background-color: var(--tg-theme-bg-color, #FFFFFF); 
