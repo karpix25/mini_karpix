@@ -1,379 +1,224 @@
-/* ===== ОБЩИЕ СТИЛИ ДЛЯ КОНТЕЙНЕРОВ И КАРТОЧЕК ===== */
-.profile-container {
-    padding: 0; /* padding будет внутри карточек */
-    background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); 
-    min-height: 100vh;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    color: var(--tg-theme-text-color, #1A1A1A); 
-}
+import React, { useState, useEffect } from 'react';
+import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css'; 
+import './Profile.css'; 
 
-/* Обертка для десктопного макета - по умолчанию flex-column для мобильных */
-.profile-desktop-wrapper {
-    display: flex;
-    flex-direction: column;
-    /* margin-bottom нужен для отступа между нижними лидербордами и фиксированным меню */
-    margin-bottom: 20px; 
-}
+const tg = window.Telegram?.WebApp;
+const BACKEND_URL = "https://miniback.karpix.com";
 
-/* Обертки для секций - по умолчанию flex-column для мобильных */
-.profile-top-section,
-.profile-leaderboards-section {
-    display: flex;
-    flex-direction: column;
-    /* Марджины для этих оберток не нужны, так как карточки внутри имеют свои марджины для мобильного */
-}
+// Новый вспомогательный компонент для отображения места и медали (из Leaderboard.js)
+const RankDisplay = ({ rank }) => {
+    let medal = null;
+    if (rank === 1) medal = '🥇';
+    if (rank === 2) medal = '🥈';
+    if (rank === 3) medal = '🥉';
 
-.profile-card {
-    background: var(--tg-theme-bg-color, #FFFFFF); 
-    border-radius: 12px;
-    padding: 20px;
-    margin: 16px; /* Отступы между карточками и от краев на мобильных */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); 
-}
+    return (
+        <div className="user-rank-position">
+            <span className="rank-number">{rank}</span>
+            {medal && <span className="medal-emoji">{medal}</span>}
+        </div>
+    );
+};
 
-.card-title {
-    margin: 0 0 16px 0;
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--tg-theme-text-color, #1A1A1A); 
-}
+// Новый вспомогательный компонент для одной строки пользователя в лидерборде (из Leaderboard.js)
+const LeaderboardUserRow = ({ user, period }) => {
+    const scoreFormatted = (period === 'all' && user.score >= 0) ? user.score : (user.score > 0 ? `+${user.score}` : user.score);
+    const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username || 'User';
+    const initials = fullName.split(' ').map(word => word[0]).join('').substring(0, 2).toUpperCase();
+    const avatarUrl = user.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=4A90E2&color=fff&size=40&font-size=0.5`;
 
-/* ===== ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ ===== */
-.profile-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 24px; 
-}
+    return (
+        <div className="leaderboard-user-row">
+            <RankDisplay rank={user.rank} />
+            <img 
+                src={avatarUrl} 
+                alt={fullName} 
+                className="leaderboard-avatar"
+                onError={(e) => {
+                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=6c757d&color=fff&size=40&font-size=0.5`;
+                }}
+            />
+            <span className="leaderboard-user-name">{fullName}</span>
+            <span className="leaderboard-user-score">{scoreFormatted}</span>
+        </div>
+    );
+};
 
-.progress-container {
-    width: 150px;
-    height: 150px;
-    position: relative;
-    margin-bottom: 15px;
-}
 
-.profile-avatar { 
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 85%; 
-    height: 85%;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid var(--tg-theme-bg-color, #FFFFFF); 
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); 
-}
+function Profile() {
+  const [userData, setUserData] = useState(null);
+  const [allRanks, setAllRanks] = useState([]);
+  const [leaderboardData7d, setLeaderboardData7d] = useState({ top_users: [], current_user: null });
+  const [leaderboardData30d, setLeaderboardData30d] = useState({ top_users: [], current_user: null });
+  const [leaderboardDataAll, setLeaderboardDataAll] = useState({ top_users: [], current_user: null });
+  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-.profile-rank-badge {
-    position: absolute;
-    bottom: 5px; 
-    right: 5px; 
-    background-color: var(--tg-theme-link-color, #4A90E2); 
-    color: #FFFFFF; /* Явно белый цвет для цифры */
-    border-radius: 50%;
-    width: 32px; 
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  useEffect(() => {
+    if (!tg?.initData) {
+      setError("Это приложение предназначено для работы внутри Telegram.");
+      setLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const headers = { 'X-Init-Data': tg.initData };
+        
+        const [userRes, ranksRes] = await Promise.all([
+          fetch(`${BACKEND_URL}/api/me`, { headers }),
+          fetch(`${BACKEND_URL}/api/ranks`, { headers })
+        ]);
+
+        if (!userRes.ok) throw new Error("Ошибка загрузки профиля");
+        if (!ranksRes.ok) throw new Error("Ошибка загрузки рангов");
+
+        const userDataFetched = await userRes.json();
+        const ranksDataFetched = await ranksRes.json();
+
+        setUserData(userDataFetched);
+        setAllRanks(ranksDataFetched);
+
+        const [lb7dRes, lb30dRes, lbAllRes] = await Promise.all([
+            fetch(`${BACKEND_URL}/api/leaderboard?period=7d`, { headers }),
+            fetch(`${BACKEND_URL}/api/leaderboard?period=30d`, { headers }),
+            fetch(`${BACKEND_URL}/api/leaderboard?period=all`, { headers })
+        ]);
+
+        if (!lb7dRes.ok) throw new Error("Ошибка загрузки лидерборда (7 дней)");
+        if (!lb30dRes.ok) throw new Error("Ошибка загрузки лидерборда (30 дней)");
+        if (!lbAllRes.ok) throw new Error("Ошибка загрузки лидерборда (все время)");
+
+        setLeaderboardData7d(await lb7dRes.json());
+        setLeaderboardData30d(await lb30dRes.json());
+        setLeaderboardDataAll(await lbAllRes.json());
+
+      } catch (err) {
+        console.error("Ошибка загрузки данных:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []); 
+
+  if (loading) return <div className="profile-container common-loading-error-state">Загрузка...</div>;
+  if (error) return <div className="profile-container common-loading-error-state"><strong>Ошибка:</strong><p>{error}</p></div>;
+  if (!userData || allRanks.length === 0) return <div className="profile-container common-loading-error-state">Загрузка...</div>;
+
+  const fullName = [userData.first_name, tg.initDataUnsafe?.user?.last_name || ''].filter(Boolean).join(' ');
+  const initials = fullName.split(' ').map(word => word[0]).join('').substring(0, 2).toUpperCase();
+  const profileAvatarUrl = tg.initDataUnsafe?.user?.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=4A90E2&color=fff&size=150&font-size=0.5`;
+
+  const renderLeaderboardSection = (title, data, period) => {
+    const top10Users = data.top_users.slice(0, 10);
+    const currentUserForDisplay = data.current_user ? (top10Users.find(u => data.current_user && u.user_id === data.current_user.user_id) || data.current_user) : null;
     
-    font-size: 18px; 
-    font-weight: 700;
-    line-height: 1; 
-    text-align: center; 
-    z-index: 10; /* Убедимся, что он поверх других элементов */
+    return (
+        <div className="profile-card leaderboard-section">
+            <h3 className="card-title leaderboard-title">{title}</h3>
+            {top10Users.length > 0 ? (
+                <div className="leaderboard-list">
+                    {top10Users.map(user => (
+                        <LeaderboardUserRow key={user.user_id} user={user} period={period} />
+                    ))}
+                </div>
+            ) : (
+                <div className="no-leaders-message">Лидеры пока не определены. Будь первым!</div>
+            )}
 
-    border: 2px solid var(--tg-theme-bg-color, #FFFFFF); 
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    /* outline: 2px solid red;  ВРЕМЕННО ДЛЯ ОТЛАДКИ - удалить после */
+            {currentUserForDisplay && !top10Users.some(u => u.user_id === currentUserForDisplay.user_id) && (
+                <div className="leaderboard-your-rank-card">
+                    <h3 className="leaderboard-your-rank-title">Ваш ранг</h3>
+                    <LeaderboardUserRow user={currentUserForDisplay} period={period} />
+                </div>
+            )}
+        </div>
+    );
+  };
+
+  return (
+    <div className="profile-container">
+      <div className="profile-desktop-wrapper"> {/* НОВАЯ ОБЕРТКА ДЛЯ ДЕСКТОПА */}
+        {/* Верхняя секция: Профиль + Все уровни */}
+        <div className="profile-top-section"> {/* НОВАЯ ОБЕРТКА ДЛЯ ВЕРХНЕЙ СЕКЦИИ */}
+          {/* Профиль пользователя */}
+          <div className="profile-card profile-main-card">
+            <div className="profile-header">
+              <div className="progress-container">
+                <CircularProgressbar
+                  value={userData.progress_percentage || 0}
+                  text={`${userData.level || userData.rank}`} 
+                  strokeWidth={5}
+                  styles={buildStyles({
+                    textColor: '#1A1A1A', 
+                    pathColor: '#61dafb', 
+                    trailColor: '#E9ECEF', 
+                    textSize: '28px',
+                    backgroundColor: 'white', 
+                  })}
+                />
+                <img 
+                  src={profileAvatarUrl} 
+                  alt="avatar" 
+                  className="profile-avatar" 
+                  onError={(e) => {
+                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=6c757d&color=fff&size=150&font-size=0.5`;
+                  }}
+                />
+                <div className="profile-rank-badge">
+                    {userData.level}
+                </div>
+              </div>
+              <h2 className="profile-name">{fullName}</h2>
+              <p className="profile-rank-name">
+                  Level {userData.level} - {userData.rank} 
+                  <span className="rank-icon-text">🛠️</span>
+              </p>
+              {userData.points_to_next_rank !== null ? (
+                  <p className="profile-points-to-go">
+                    {userData.points_to_next_rank} points to level up 
+                    <span className="help-icon">?</span>
+                </p>
+              ) : (
+                  <p className="profile-points-to-go">Максимальный уровень!</p>
+              )}
+            </div>
+          </div>
+
+          {/* Секция "Все уровни" как отдельная карточка */}
+          <div className="profile-card ranks-list-card">
+            <h3 className="card-title">Все уровни</h3>
+            <div className="ranks-list">
+                {allRanks.map(rank => (
+                <div key={rank.level} className={`rank-item ${rank.is_unlocked ? 'unlocked' : 'locked'}`}>
+                    <div className="rank-item-icon">
+                    {rank.is_unlocked ? '✅' : '🔒'}
+                    </div>
+                    <div className="rank-item-info">
+                    Level {rank.level} - {rank.name}
+                    <span>{rank.min_points}+ очков</span>
+                    </div>
+                </div>
+                ))}
+            </div>
+          </div>
+        </div> {/* КОНЕЦ profile-top-section */}
+
+        {/* Секции Лидерборда (каждая в отдельной карточке) */}
+        <div className="profile-leaderboards-section"> {/* НОВАЯ ОБЕРТКА ДЛЯ ЛИДЕРБОРДОВ */}
+            {renderLeaderboardSection("Leaderboard (7-day)", leaderboardData7d, '7d')}
+            {renderLeaderboardSection("Leaderboard (30-day)", leaderboardData30d, '30d')}
+            {renderLeaderboardSection("Leaderboard (All-time)", leaderboardDataAll, 'all')}
+        </div>
+      </div> {/* КОНЕЦ profile-desktop-wrapper */}
+    </div>
+  );
 }
 
-.profile-name {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--tg-theme-text-color, #1A1A1A);
-}
-
-.profile-rank-name {
-    margin: 5px 0;
-    font-size: 16px;
-    color: var(--tg-theme-hint-color, #6C757D); 
-    font-weight: 500;
-    display: flex; 
-    align-items: center;
-    gap: 8px; 
-}
-
-.rank-icon-text {
-    font-size: 18px; 
-}
-
-.profile-points-to-go {
-    font-size: 14px;
-    color: var(--tg-theme-link-color, #4A90E2); 
-    margin-top: 5px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.help-icon {
-    font-size: 12px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background-color: var(--tg-theme-hint-color, #CED4DA);
-    color: var(--tg-theme-bg-color, #FFFFFF);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: help;
-}
-
-/* ===== СПИСОК ВСЕХ РАНГОВ ===== */
-.ranks-list-card {
-    margin-bottom: 16px; 
-}
-
-.ranks-list {
-    text-align: left;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.rank-item {
-    display: flex;
-    align-items: center;
-    padding: 12px 16px;
-    background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); 
-    border-radius: 8px;
-    transition: background-color 0.2s ease;
-    border: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); 
-}
-
-.rank-item.unlocked {
-    border-color: var(--tg-theme-success-color, #28a745); 
-    background-color: var(--tg-theme-success-bg-color, rgba(40, 167, 69, 0.1)); 
-}
-
-.rank-item.locked {
-    opacity: 0.6; 
-}
-
-.rank-item-icon {
-    font-size: 20px;
-    margin-right: 15px;
-    flex-shrink: 0;
-}
-
-.rank-item-info {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-    color: var(--tg-theme-text-color, #1A1A1A); 
-}
-
-.rank-item-info span {
-    font-size: 13px;
-    color: var(--tg-theme-hint-color, #6C757D); 
-}
-
-/* ===== СЕКЦИИ ЛИДЕРБОРДА ===== */
-.leaderboard-section {
-    /* Общие стили карточки уже применены через .profile-card */
-}
-
-.leaderboard-title {
-    /* Используем card-title */
-}
-
-.leaderboard-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px; 
-}
-
-.leaderboard-user-row {
-    display: flex;
-    align-items: center;
-    padding: 8px 0; 
-    border-radius: 0; 
-    transition: background-color 0.2s ease;
-}
-
-.leaderboard-user-row:hover {
-    background-color: transparent; 
-}
-
-.user-rank-position {
-    flex-shrink: 0;
-    width: 50px; 
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    font-weight: 600;
-    font-size: 16px;
-    color: var(--tg-theme-hint-color, #6C757D); 
-    margin-right: 12px; 
-}
-
-.user-rank-position .rank-number {
-    width: 24px;
-    text-align: center;
-    font-weight: 500; 
-    color: var(--tg-theme-text-color, #1A1A1A); 
-}
-
-.medal-emoji {
-    font-size: 24px;
-    margin-left: 4px; 
-    line-height: 1;
-}
-
-.leaderboard-avatar {
-    width: 40px; 
-    height: 40px;
-    border-radius: 50%;
-    margin-right: 12px;
-    object-fit: cover;
-    flex-shrink: 0;
-    border: none; 
-    box-shadow: none; 
-}
-
-.leaderboard-user-name {
-    flex-grow: 1;
-    font-weight: 500;
-    font-size: 16px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: var(--tg-theme-text-color, #1A1A1A); 
-    margin-right: 8px;
-}
-
-.leaderboard-user-score {
-    font-weight: 600;
-    font-size: 16px;
-    color: var(--tg-theme-link-color, #007BFF); 
-    margin-left: auto;
-    flex-shrink: 0;
-}
-
-.leaderboard-your-rank-card {
-    background: var(--tg-theme-secondary-bg-color, #F8F9FA); 
-    border-radius: 12px;
-    padding: 16px;
-    margin-top: 20px;
-    box-shadow: none;
-    border: none;
-}
-
-.leaderboard-your-rank-title {
-    margin: 0 0 12px 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--tg-theme-text-color, #1A1A1A);
-}
-
-.no-leaders-message {
-    text-align: center;
-    padding: 20px;
-    font-size: 14px;
-    color: var(--tg-theme-hint-color, #6C757D);
-}
-
-/* ===== ОБЩИЕ СОСТОЯНИЯ ЗАГРУЗКИ И ОШИБКИ ===== */
-.common-loading-error-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 60vh;
-    padding: 20px;
-    text-align: center;
-    background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); 
-    color: var(--tg-theme-text-color, #1A1A1A);
-}
-
-.common-loading-error-state .loader {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--tg-theme-secondary-bg-color, #E9ECEF);
-    border-top: 3px solid var(--tg-theme-link-color, #007BFF);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 16px;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.common-loading-error-state p {
-    margin: 0;
-    font-size: 16px;
-    color: var(--tg-theme-hint-color, #6C757D);
-}
-
-
-/* ===== АДАПТИВНОСТЬ ДЛЯ ДЕСКТОПА (min-width: 1024px) ===== */
-@media (min-width: 1024px) { 
-    .profile-container {
-        padding: 0; /* Удаляем общий padding, чтобы margin auto работал на profile-desktop-wrapper */
-        display: flex; /* Делаем flex, чтобы центрировать profile-desktop-wrapper */
-        justify-content: center; /* Центрируем по горизонтали */
-    }
-
-    .profile-desktop-wrapper {
-        display: grid;
-        /* Определяем основные области в гриде: две строки */
-        grid-template-rows: auto auto; 
-        grid-template-columns: 1fr; /* Одна общая колонка, внутри которой будут свои гриды */
-        gap: 20px; /* Отступ между верхней и нижней секциями */
-        max-width: 1200px; /* Максимальная ширина содержимого, как на скриншоте */
-        width: 100%; /* Занимаем всю доступную ширину до max-width */
-        margin: 16px 20px; /* Отступы сверху/снизу и по бокам от краев экрана */
-    }
-
-    .profile-top-section {
-        display: grid; 
-        grid-template-columns: 1fr 2fr; /* Профиль (1 часть) + Ранги (2 части) */
-        gap: 20px; /* Отступ между профилем и рангами */
-    }
-
-    .profile-card {
-        margin: 0; /* Убираем марджины на карточках, так как gap управляет отступами */
-    }
-
-    .profile-leaderboards-section {
-        display: grid; 
-        grid-template-columns: repeat(3, 1fr); /* Три равные колонки для лидербордов */
-        gap: 20px; /* Отступ между колонками лидербордов */
-    }
-
-    /* Адаптация padding для .content, чтобы не было слишком больших отступов на десктопе */
-    .content {
-        padding-bottom: 20px; /* Меньший отступ снизу на десктопе, так как контент сам по себе будет иметь свои отступы */
-    }
-}
-
-/* ===== АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ (max-width: 768px) ===== */
-@media (max-width: 768px) {
-    .profile-card {
-        margin: 12px;
-        padding: 16px;
-    }
-    /* ... (остальные мобильные стили без изменений) ... */
-    .profile-rank-badge {
-        font-size: 14px; /* Уменьшаем размер шрифта для мобильных, чтобы лучше помещался */
-        width: 28px;
-        height: 28px;
-    }
-}
+export default Profile;
