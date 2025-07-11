@@ -12,6 +12,7 @@
   background: var(--tg-theme-bg-color, #FFFFFF); /* Адаптивный фон */
   padding: 20px; /* Общий отступ */
   border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); /* Тонкая разделительная линия */
+  text-align: left; /* Выравнивание по левому краю для всего хедера */
 }
 
 .course-simple-title {
@@ -46,14 +47,16 @@
   font-weight: 600;
   color: var(--tg-theme-text-color, #1A1A1A);
   margin: 20px 0 10px 0; /* Отступы для заголовка секции */
+  text-align: left; /* Выравнивание по левому краю */
 }
 
 .section-lessons-list { /* Стиль для <ol> */
-  list-style: decimal; /* Нумерованный список */
-  list-style-position: outside; /* Номера снаружи блока */
-  padding-left: 20px; /* Отступ для номеров */
+  /* Убираем дефолтные стили списка, чтобы использовать свои */
+  list-style: none; 
+  padding-left: 0; 
   margin: 0;
-  color: var(--tg-theme-text-color, #1A1A1A); /* Адаптивный текст для номеров */
+  /* Для нумерации уроков будем использовать CSS counters */
+  counter-reset: lesson-counter; 
 }
 
 .lesson-list-item { /* Стиль для <li> */
@@ -64,15 +67,9 @@
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  display: flex; 
-  align-items: center;
-  position: relative; /* Для лучшего контроля над дочерними элементами */
-  list-style: none; /* Убираем дефолтный маркер списка, мы используем свою нумерацию */
-}
-
-/* Переопределяем цвет номера списка, чтобы он совпадал с текстом урока */
-.section-lessons-list li::marker {
-    color: var(--tg-theme-text-color, #1A1A1A); 
+  display: flex; /* Используем flexbox для выравнивания номера и текста */
+  align-items: baseline; /* Выравнивание по базовой линии текста */
+  text-align: left; /* Выравнивание всего элемента по левому краю */
 }
 
 .lesson-list-item:last-child {
@@ -93,16 +90,21 @@
   color: var(--tg-theme-hint-color, #6C757D); /* Адаптивный цвет для заблокированных */
 }
 
-.lesson-item-number {
+/* Стилизация номера урока с помощью CSS counter */
+.lesson-list-item::before {
+    counter-increment: lesson-counter; /* Увеличиваем счетчик */
+    content: counter(lesson-counter) ". "; /* Выводим номер и точку */
     flex-shrink: 0; /* Не сжимается */
     width: 30px; /* Фиксированная ширина для номера */
     text-align: right; /* Выравнивание номера */
     margin-right: 10px; /* Отступ от заголовка */
-    font-weight: 600; /* Жирнее */
+    font-weight: 600; /* Жирнее, как на скриншоте */
+    color: var(--tg-theme-text-color, #1A1A1A); /* Цвет номера */
 }
 
 .lesson-item-title {
-  flex-grow: 1; 
+  flex-grow: 1; /* Заголовок занимает оставшееся место */
+  /* margin-left: 10px; */ /* Этот марджин теперь не нужен, так как его создает ::before */
 }
 
 /* ===== ОБЩИЕ СОСТОЯНИЯ ЗАГРУЗКИ И ОШИБКИ ===== */
@@ -172,12 +174,12 @@
     padding: 10px 0;
   }
   .course-sections-list-wrapper {
-    padding: 16px;
+    padding: 16px; /* Чуть меньше отступы на мобильных */
   }
   .section-lessons-list {
-    padding-left: 15px;
+    /* padding-left теперь управляется lesson-list-item::before */
   }
-  .lesson-item-number {
+  .lesson-list-item::before {
     width: 25px; /* Чуть меньше на мобильных */
     margin-right: 8px;
   }
