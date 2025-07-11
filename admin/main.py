@@ -13,6 +13,8 @@ import hashlib
 app = FastAPI(title="Админ-панель Уроков")
 
 # Простая HTML-админка
+# В admin/main.py обновите HTML_TEMPLATE (добавьте колонки):
+
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -21,17 +23,19 @@ HTML_TEMPLATE = """
     <meta charset="utf-8">
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
         th { background-color: #f2f2f2; }
-        .btn { padding: 8px 16px; margin: 4px; text-decoration: none; background: #007bff; color: white; border: none; cursor: pointer; }
+        .btn { padding: 6px 12px; margin: 2px; text-decoration: none; background: #007bff; color: white; border: none; cursor: pointer; font-size: 12px; }
         .btn-danger { background: #dc3545; }
         .form-group { margin: 10px 0; }
-        .form-group label { display: block; margin-bottom: 5px; }
-        .form-group input, .form-group textarea { width: 100%; padding: 8px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 8px; }
         .login-form { max-width: 400px; margin: 100px auto; padding: 20px; border: 1px solid #ddd; }
         textarea { height: 200px; }
+        .preview-text { height: 80px; }
+        .content-preview { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -46,6 +50,8 @@ HTML_TEMPLATE = """
                     <th>Секция</th>
                     <th>Урок</th>
                     <th>Заголовок</th>
+                    <th>Ранг</th>
+                    <th>Превью</th>
                     <th>Порядок</th>
                     <th>Действия</th>
                 </tr>
@@ -58,6 +64,8 @@ HTML_TEMPLATE = """
                     <td>{{ lesson.section_id }}</td>
                     <td>{{ lesson.lesson_slug }}</td>
                     <td>{{ lesson.title }}</td>
+                    <td>{{ lesson.rank_required or 1 }}</td>
+                    <td class="content-preview">{{ lesson.preview_text or '' }}</td>
                     <td>{{ lesson.sort_order }}</td>
                     <td>
                         <a href="/admin/lessons/{{ lesson.id }}/edit" class="btn">Редактировать</a>
@@ -67,6 +75,110 @@ HTML_TEMPLATE = """
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+</body>
+</html>
+"""
+
+# Обновите EDIT_TEMPLATE (добавьте новые поля):
+
+EDIT_TEMPLATE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Редактировать урок</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .form-group { margin: 15px 0; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .btn { padding: 10px 20px; margin: 4px; text-decoration: none; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; }
+        .btn-secondary { background: #6c757d; }
+        textarea { height: 300px; }
+        .preview-text { height: 100px; }
+        .form-row { display: flex; gap: 20px; }
+        .form-row .form-group { flex: 1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ "Редактировать" if lesson else "Добавить" }} урок</h1>
+        <form method="post">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Курс ID:</label>
+                    <input type="text" name="course_id" value="{{ lesson.course_id if lesson else '' }}" required 
+                           placeholder="Например: welcome, javascript, python">
+                </div>
+                <div class="form-group">
+                    <label>Секция ID:</label>
+                    <input type="text" name="section_id" value="{{ lesson.section_id if lesson else '' }}" required
+                           placeholder="Например: introduction, basics, advanced">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Урок (slug):</label>
+                    <input type="text" name="lesson_slug" value="{{ lesson.lesson_slug if lesson else '' }}" required
+                           placeholder="Например: getting-started, variables, functions">
+                </div>
+                <div class="form-group">
+                    <label>Требуемый ранг:</label>
+                    <select name="rank_required" required>
+                        <option value="1" {{ 'selected' if lesson and lesson.rank_required == 1 else '' }}>1 - Новичок</option>
+                        <option value="2" {{ 'selected' if lesson and lesson.rank_required == 2 else '' }}>2 - Активный участник</option>
+                        <option value="3" {{ 'selected' if lesson and lesson.rank_required == 3 else '' }}>3 - Ветеран</option>
+                        <option value="4" {{ 'selected' if lesson and lesson.rank_required == 4 else '' }}>4 - Легенда</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Заголовок:</label>
+                <input type="text" name="title" value="{{ lesson.title if lesson else '' }}" required
+                       placeholder="Название урока">
+            </div>
+            
+            <div class="form-group">
+                <label>Превью (краткое описание):</label>
+                <textarea name="preview_text" class="preview-text" 
+                          placeholder="Краткое описание урока, которое увидят пользователи">{{ lesson.preview_text if lesson else '' }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Содержимое (Markdown):</label>
+                <textarea name="content" placeholder="# Заголовок урока
+
+Введение в урок...
+
+## Что вы изучите
+
+- Пункт 1
+- Пункт 2
+
+## Пример кода
+
+```javascript
+console.log('Hello, World!');
+```
+
+## Заключение
+
+Подведение итогов...">{{ lesson.content if lesson else '' }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Порядок сортировки:</label>
+                <input type="number" name="sort_order" value="{{ lesson.sort_order if lesson else '0' }}"
+                       placeholder="0, 1, 2, 3... (порядок отображения)">
+            </div>
+            
+            <button type="submit" class="btn">Сохранить</button>
+            <a href="/admin/lessons" class="btn btn-secondary">Отмена</a>
+        </form>
     </div>
 </body>
 </html>
