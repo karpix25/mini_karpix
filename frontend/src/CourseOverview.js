@@ -12,25 +12,23 @@ const LessonListItem = ({ lesson, isUnlocked, onLessonClick }) => {
       className={`lesson-list-item ${!isUnlocked ? 'locked' : ''} ${lesson.completed ? 'completed' : ''}`}
       onClick={() => isUnlocked && onLessonClick(lesson.id)}
     >
-      <span className="lesson-item-number">{lesson.sort_order}.</span> {/* Нумерация урока */}
+      {/* lesson.sort_order теперь будет использоваться для CSS counter, не рендерим его явно тут */}
       <span className="lesson-item-title">{lesson.title}</span>
-      {/* Если нужны иконки для состояния, можно добавить здесь */}
-      {/* {!isUnlocked ? '🔒' : lesson.completed ? '✅' : ''} */}
-      {/* <span className="lesson-item-duration">5 мин</span> */} {/* Если длительность нужна */}
     </li>
   );
 };
 
-// Компонент секции курса
+// Компонент секции курса (если секции нужны для группировки уроков)
 const CourseSection = ({ section, onLessonClick, userRankLevel }) => {
   // Логика разблокировки секции (если применимо)
   const isSectionUnlocked = true; // Пока всегда true, если курс доступен
   
   return (
     <div className="course-section-group">
-      {/* Заголовок секции, если он нужен для разделения, но не как отдельная карточка */}
+      {/* Заголовок секции - если он нужен для разделения, но менее заметный */}
       {section.title && <h3 className="course-section-title">{section.title}</h3>}
       
+      {/* Нумерованный список уроков */}
       <ol className="section-lessons-list">
         {section.lessons.map((lesson) => (
           <LessonListItem 
@@ -167,13 +165,6 @@ function CourseOverview() {
           />
         ))}
       </div>
-
-      {/* Информация о доступе - удалить, если не нужна */}
-      {/* <div className="access-info">
-        <p className="access-text">
-          💡 Зарабатывайте очки в канале, чтобы разблокировать новые курсы
-        </p>
-      </div> */}
     </div>
   );
 }
