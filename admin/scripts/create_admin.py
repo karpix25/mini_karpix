@@ -1,9 +1,15 @@
 import asyncio
 import os
+import sys # <-- ДОБАВЛЕНО: Импортируем модуль sys
 from tortoise import Tortoise
-from main import AdminUser # Импортируем нашу модель админа
-# !!! ИСПРАВЛЕННЫЙ ИМПОРТ ДЛЯ ХЕШИРОВАНИЯ ПАРОЛЕЙ !!!
 from passlib.context import CryptContext 
+
+# !!! ДОБАВЛЕНА СТРОКА: Явно добавляем родительскую директорию в путь импорта Python !!!
+# Это позволяет импортировать 'main.py', который находится в /app (родительская папка для /app/scripts)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) 
+
+# Теперь импорт AdminUser должен сработать, т.к. 'main' находится в sys.path
+from main import AdminUser 
 
 # Создаем контекст для работы с паролями (используем bcrypt, как делает FastAPI-Admin)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -22,7 +28,7 @@ async def main():
     # Инициализируем подключение к базе
     await Tortoise.init(
         db_url=DATABASE_URL,
-        modules={"models": ["main"]} # Указываем, что модели в файле main.py
+        modules={"models": ["main"]} # Теперь "main" здесь относится к admin/main.py
     )
     # Эта команда создает таблицу 'admins' в базе, если она еще не создана
     await Tortoise.generate_schemas()
@@ -36,7 +42,6 @@ async def main():
 
     # Проверяем, существует ли уже пользователь с таким именем
     if not await AdminUser.filter(username=username).exists():
-        # !!! ИСПРАВЛЕННЫЙ МЕТОД ХЕШИРОВАНИЯ ПАРОЛЯ !!!
         password_hash = pwd_context.hash(password)
         
         # Создаем нового админа в таблице 'admins'
