@@ -1,6 +1,6 @@
 /* ===== ОБЩИЕ СТИЛИ ДЛЯ КОНТЕЙНЕРОВ И КАРТОЧЕК ===== */
 .profile-container {
-    padding: 0; /* padding будет внутри карточек */
+    padding: 0; 
     background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); 
     min-height: 100vh;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -11,8 +11,7 @@
 .profile-desktop-wrapper {
     display: flex;
     flex-direction: column;
-    /* margin-bottom нужен для отступа между нижними лидербордами и фиксированным меню */
-    margin-bottom: 20px; 
+    margin-bottom: 20px; /* Отступ от нижнего фиксированного меню */
 }
 
 /* Обертки для секций - по умолчанию flex-column для мобильных */
@@ -20,7 +19,7 @@
 .profile-leaderboards-section {
     display: flex;
     flex-direction: column;
-    /* Марджины для этих оберток не нужны, так как карточки внутри имеют свои марджины для мобильного */
+    /* На мобильных элементах внутри будут работать свои марджины */
 }
 
 .profile-card {
@@ -83,11 +82,11 @@
     font-weight: 700;
     line-height: 1; 
     text-align: center; 
-    z-index: 10; /* Убедимся, что он поверх других элементов */
+    z-index: 10; 
 
     border: 2px solid var(--tg-theme-bg-color, #FFFFFF); 
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    /* outline: 2px solid red;  ВРЕМЕННО ДЛЯ ОТЛАДКИ - удалить после */
+    /* outline: 2px solid red; */ /* УДАЛИТЕ ЭТО, ЕСЛИ ЦИФРА ВИДНА */
 }
 
 .profile-name {
@@ -346,11 +345,42 @@
         display: grid; 
         grid-template-columns: 1fr 2fr; /* Профиль (1 часть) + Ранги (2 части) */
         gap: 20px; /* Отступ между профилем и рангами */
+
+        /* Теперь profile-top-section становится большой "карточкой" */
+        background: var(--tg-theme-bg-color, #FFFFFF); 
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); 
+        padding: 20px; /* Внутренний отступ для этой большой карточки */
     }
 
-    .profile-card {
+    /* Карточки внутри profile-top-section теряют свои стили карточек на десктопе */
+    .profile-top-section .profile-card,
+    .profile-top-section .ranks-list-card {
         margin: 0; /* Убираем марджины на карточках, так как gap управляет отступами */
+        padding: 0; /* Убираем padding, чтобы содержимое начиналось от края грид-ячейки */
+        background: none; /* Убираем фон */
+        box-shadow: none; /* Убираем тень */
+        border: none; /* Убираем границы */
     }
+
+    /* Отдельная корректировка для аватара внутри profile-main-card на десктопе */
+    .profile-top-section .profile-main-card .progress-container {
+        width: 180px; /* Увеличиваем размер аватара/круга */
+        height: 180px;
+        margin-bottom: 20px; /* Увеличиваем отступ */
+    }
+    .profile-top-section .profile-main-card .profile-avatar {
+        width: 90%; /* Аватар занимает больше места в увеличенном круге */
+        height: 90%;
+    }
+    /* Центрирование аватара внутри его колонки */
+    .profile-top-section .profile-main-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* Центрируем содержимое колонки профиля */
+        text-align: center; /* Выравниваем текст по центру */
+    }
+
 
     .profile-leaderboards-section {
         display: grid; 
@@ -358,6 +388,11 @@
         gap: 20px; /* Отступ между колонками лидербордов */
     }
 
+    /* Карточки внутри profile-leaderboards-section сохраняют свой обычный стиль .profile-card, но сбросим margin */
+    .profile-leaderboards-section .profile-card {
+        margin: 0; /* Убираем марджины, так как gap управляет отступами */
+    }
+    
     /* Адаптация padding для .content, чтобы не было слишком больших отступов на десктопе */
     .content {
         padding-bottom: 20px; /* Меньший отступ снизу на десктопе, так как контент сам по себе будет иметь свои отступы */
