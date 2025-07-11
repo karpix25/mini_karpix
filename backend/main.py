@@ -188,7 +188,8 @@ def get_courses_from_db(db) -> Dict[str, dict]:
     """Получает все курсы из БД и группирует их"""
     cur = db.cursor()
     cur.execute("""
-        SELECT DISTINCT course_id, 
+        SELECT course_id, 
+               MIN(rank_required) as min_rank_required,
                COALESCE(MIN(sort_order), 0) as min_sort_order
         FROM lessons 
         GROUP BY course_id 
@@ -200,12 +201,11 @@ def get_courses_from_db(db) -> Dict[str, dict]:
     courses = {}
     for course_row in courses_data:
         course_id = course_row['course_id']
-        # Базовые метаданные курса (можно расширить через отдельную таблицу)
         courses[course_id] = {
             "id": course_id,
             "title": f"Курс {course_id.title()}",
             "description": f"Описание курса {course_id}",
-            "rank_required": 0,  # По умолчанию доступен всем
+            "rank_required": course_row['min_rank_required'] or 1,  # Читаем из БД
         }
     
     return courses
