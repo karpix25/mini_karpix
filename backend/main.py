@@ -182,7 +182,58 @@ async def get_current_user(x_init_data: str = Header(None), db=Depends(get_db_co
 
     return user_data
 
-# --- НОВЫЕ ФУНКЦИИ ДЛЯ РАБОТЫ С КУРСАМИ ИЗ БД ---
+# --- НОВЫЕ ФУНКЦИИ ДЛЯ КУРСОВ ИЗ АДМИНКИ ---
+
+def get_admin_courses_from_db(db) -> List[dict]:
+    """Получает курсы созданные через админку"""
+    try:
+        cur = db.cursor()
+        cur.execute("""
+            SELECT id, name, description, cover_image_url, access_type, 
+                   access_level, access_days, is_published, created_at
+            FROM courses 
+            WHERE is_published = true 
+            ORDER BY created_at DESC
+        """)
+        admin_courses = cur.fetchall()
+        cur.close()
+        
+        courses = []
+        for course in admin_courses:
+            courses.append({
+                "id": f"admin_{course['id']}", 
+                "title": course['name'],
+                "description": course['description'] or f"Описание курса {course['name']}",
+                "rank_required": course['access_level'] or 1,
+                "admin_course": True,
+                "access_type": course['access_type'],
+                "cover_image_url": course['cover_image_url']
+            })
+        
+        return courses
+    except Exception as e:
+        print(f"Ошибка получения курсов из админки: {e}")
+        return []
+
+def get_combined_courses_data(db) -> Dict[str, dict]:
+    """Объединяет курсы из БД (lessons) + курсы из админки"""
+    existing_courses = get_courses_from_db(db)
+    admin_courses = get_admin_courses_from_db(db)
+    
+    all_courses = {}
+    
+    # Сначала добавляем курсы из админки
+    for course in admin_courses:
+        all_courses[course["id"]] = course
+    
+    # Потом добавляем существующие курсы
+    for course_id, course_data in existing_courses.items():
+        if course_id not in all_courses:
+            all_courses[course_id] = course_data
+    
+    return all_courses
+
+# --- ФУНКЦИИ ДЛЯ РАБОТЫ С КУРСАМИ ИЗ БД ---
 
 def get_courses_from_db(db) -> Dict[str, dict]:
     """Получает все курсы из БД и группирует их"""
@@ -205,7 +256,8 @@ def get_courses_from_db(db) -> Dict[str, dict]:
             "id": course_id,
             "title": f"Курс {course_id.title()}",
             "description": f"Описание курса {course_id}",
-            "rank_required": course_row['min_rank_required'] or 1,  # Читаем из БД
+            "rank_required": course_row['min_rank_required'] or 1,
+            "admin_course": False
         }
     
     return courses
@@ -240,11 +292,11 @@ def get_course_sections_from_db(db, course_id: str) -> List[dict]:
     
     return list(sections_dict.values())
 
-# --- ОБНОВЛЕННЫЕ ЭНДПОИНТЫ ДЛЯ КУРСОВ (ЧИТАЮТ ИЗ БД) ---
+# --- ОБНОВЛЕННЫЕ ЭНДПОИНТЫ ДЛЯ КУРСОВ ---
 
 @app.get("/api/courses", response_model=List[CourseInfo])
 async def get_courses(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
-    """Получить список всех доступных курсов из БД"""
+    """Получить список всех доступных курсов из БД + Админки"""
     user_id = user.get("id")
     
     cur = db.cursor()
@@ -254,24 +306,30 @@ async def get_courses(user: dict = Depends(get_current_user), db=Depends(get_db_
     points = (db_user['message_count'] * 2) if db_user and db_user['message_count'] is not None else 0
     user_rank_level = get_rank_level(points)
     
-    # Получаем курсы из БД
-    courses_data = get_courses_from_db(db)
+    # Получаем ВСЕ курсы: из БД + из админки
+    courses_data = get_combined_courses_data(db)
     courses = []
     
     for course_id, course_meta in courses_data.items():
         if course_meta.get("rank_required", 1) <= user_rank_level:
-            # Считаем общее количество уроков в курсе
-            cur.execute("SELECT COUNT(*) FROM lessons WHERE course_id = %s", (course_id,))
-            total_lessons = cur.fetchone()['count']
             
-            # Получаем прогресс пользователя для этого курса
-            cur.execute("""
-                SELECT COUNT(*) FROM user_lesson_progress
-                WHERE user_id = %s AND course_id = %s;
-            """, (user_id, course_id))
-            completed_lessons = cur.fetchone()['count']
-            
-            progress = int((completed_lessons / total_lessons) * 100) if total_lessons > 0 else 0
+            # Для админ-курсов пока показываем 0 уроков
+            if course_meta.get("admin_course", False):
+                total_lessons = 0
+                completed_lessons = 0
+                progress = 0
+            else:
+                # Для обычных курсов считаем как раньше
+                cur.execute("SELECT COUNT(*) FROM lessons WHERE course_id = %s", (course_id,))
+                total_lessons = cur.fetchone()['count']
+                
+                cur.execute("""
+                    SELECT COUNT(*) FROM user_lesson_progress
+                    WHERE user_id = %s AND course_id = %s;
+                """, (user_id, course_id))
+                completed_lessons = cur.fetchone()['count']
+                
+                progress = int((completed_lessons / total_lessons) * 100) if total_lessons > 0 else 0
             
             courses.append(CourseInfo(
                 id=course_id,
@@ -298,14 +356,9 @@ async def get_course_detail(course_id: str, user: dict = Depends(get_current_use
     points = (db_user['message_count'] * 2) if db_user and db_user['message_count'] is not None else 0
     user_rank_level = get_rank_level(points)
     
-    # Проверяем, существует ли курс
-    cur.execute("SELECT COUNT(*) FROM lessons WHERE course_id = %s", (course_id,))
-    if cur.fetchone()['count'] == 0:
-        cur.close()
-        raise HTTPException(status_code=404, detail="Курс не найден")
+    # Получаем все курсы
+    courses_data = get_combined_courses_data(db)
     
-    # Получаем метаданные курса
-    courses_data = get_courses_from_db(db)
     if course_id not in courses_data:
         cur.close()
         raise HTTPException(status_code=404, detail="Курс не найден")
@@ -315,6 +368,33 @@ async def get_course_detail(course_id: str, user: dict = Depends(get_current_use
     if course_meta.get("rank_required", 1) > user_rank_level:
         cur.close()
         raise HTTPException(status_code=403, detail="Недостаточно прав для доступа к курсу")
+    
+    # Если это админ-курс, показываем заглушку
+    if course_meta.get("admin_course", False):
+        cur.close()
+        return CourseDetail(
+            id=course_id,
+            title=course_meta["title"],
+            description=course_meta["description"],
+            rank_required=course_meta["rank_required"],
+            sections=[{
+                "id": "coming_soon",
+                "title": "Скоро появятся уроки",
+                "lessons": [{
+                    "id": "placeholder",
+                    "title": "Уроки для этого курса скоро будут добавлены!",
+                    "completed": False
+                }]
+            }],
+            progress=0
+        )
+    
+    # Для обычных курсов используем существующую логику
+    # Проверяем, существует ли курс в lessons
+    cur.execute("SELECT COUNT(*) FROM lessons WHERE course_id = %s", (course_id,))
+    if cur.fetchone()['count'] == 0:
+        cur.close()
+        raise HTTPException(status_code=404, detail="Курс не найден")
     
     # Получаем секции и уроки
     sections = get_course_sections_from_db(db, course_id)
@@ -360,7 +440,7 @@ async def get_lesson_content(course_id: str, lesson_id: str, user: dict = Depend
     user_rank_level = get_rank_level(points)
     
     # Проверяем права доступа к курсу
-    courses_data = get_courses_from_db(db)
+    courses_data = get_combined_courses_data(db)
     if course_id not in courses_data:
         cur.close()
         raise HTTPException(status_code=404, detail="Курс не найден")
