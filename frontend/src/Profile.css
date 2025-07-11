@@ -61,15 +61,20 @@
     bottom: 5px; 
     right: 5px; 
     background-color: var(--tg-theme-link-color, #4A90E2); 
-    color: #FFFFFF; /* ПРОВЕРЬТЕ, ЧТО ЗДЕСЬ ИМЕННО #FFFFFF ИЛИ white */
+    color: #FFFFFF; /* Должен быть белый */
     border-radius: 50%;
     width: 32px; 
     height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px; 
+    
+    font-size: 18px; /* Увеличиваем размер шрифта, чтобы было заметнее */
     font-weight: 700;
+    line-height: 1; /* Устанавливаем line-height в 1 для точного вертикального центрирования */
+    text-align: center; /* Центрируем текст */
+    z-index: 10; /* Устанавливаем высокий z-index, чтобы быть поверх других элементов */
+
     border: 2px solid var(--tg-theme-bg-color, #FFFFFF); 
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
