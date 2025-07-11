@@ -120,12 +120,23 @@ def setup_database():
         cur.execute("ALTER TABLE channel_subscribers ADD COLUMN IF NOT EXISTS is_bot BOOLEAN DEFAULT FALSE;")
         cur.execute("ALTER TABLE channel_subscribers ADD COLUMN IF NOT EXISTS last_seen TIMESTAMPTZ DEFAULT NOW();")
         
+        logging.info("Channel subscribers columns updated")
+        
         # НОВЫЕ КОЛОНКИ для таблицы lessons
         cur.execute("ALTER TABLE lessons ADD COLUMN IF NOT EXISTS rank_required INT DEFAULT 1;")
+        logging.info("Added rank_required column")
+        
         cur.execute("ALTER TABLE lessons ADD COLUMN IF NOT EXISTS preview_text TEXT;")
+        logging.info("Added preview_text column")
+        
         cur.execute("ALTER TABLE lessons ADD COLUMN IF NOT EXISTS course_ref_id INT;")
+        logging.info("Added course_ref_id column")
+        
         cur.execute("ALTER TABLE lessons ADD COLUMN IF NOT EXISTS rich_content TEXT;")
+        logging.info("Added rich_content column")
+        
         cur.execute("ALTER TABLE lessons ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT TRUE;")
+        logging.info("Added is_published column")
         
         # Добавляем внешний ключ если его еще нет
         cur.execute("""
@@ -141,9 +152,17 @@ def setup_database():
             END $;
         """)
         
-        # 9. Создаем индекс ПОСЛЕ добавления колонки
+        # 9. Создаем индекс ПОСЛЕ добавления колонки (с проверкой существования колонки)
         cur.execute("""
-            CREATE INDEX IF NOT EXISTS idx_lessons_course_ref_id ON lessons (course_ref_id);
+            DO $body$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'lessons' AND column_name = 'course_ref_id'
+                ) THEN
+                    CREATE INDEX IF NOT EXISTS idx_lessons_course_ref_id ON lessons (course_ref_id);
+                END IF;
+            END $body$;
         """)
         
         logging.info("Database schema updated successfully with courses table")
