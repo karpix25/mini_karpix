@@ -60,7 +60,6 @@ def setup_database():
         );
     """)
 
-    # <-- НАЧАЛО ИЗМЕНЕНИЙ: ДОБАВЛЕНА ТАБЛИЦА ДЛЯ УРОКОВ -->
     # 4. Создание таблицы для хранения уроков (для админки)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS lessons (
@@ -76,14 +75,22 @@ def setup_database():
             UNIQUE (course_id, lesson_slug)
         );
     """)
-    # <-- КОНЕЦ ИЗМЕНЕНИЙ -->
     
-    # 5. Создаем индекс для ускорения выборок по дате
+    # 5. НОВАЯ ТАБЛИЦА: Создание таблицы администраторов (для админки)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS admins (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(50) UNIQUE NOT NULL,
+            password VARCHAR(128) NOT NULL
+        );
+    """)
+    
+    # 6. Создаем индекс для ускорения выборок по дате
     cur.execute("""
         CREATE INDEX IF NOT EXISTS idx_messages_date_user_id ON messages (message_date, user_id);
     """)
     
-    # 6. Добавляем недостающие колонки в существующую таблицу (если они еще не добавлены)
+    # 7. Добавляем недостающие колонки в существующую таблицу (если они еще не добавлены)
     try:
         cur.execute("ALTER TABLE channel_subscribers ADD COLUMN IF NOT EXISTS last_name VARCHAR(255);")
         cur.execute("ALTER TABLE channel_subscribers ADD COLUMN IF NOT EXISTS photo_url VARCHAR(500);")
