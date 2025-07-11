@@ -2,27 +2,25 @@ import os
 import hmac
 import hashlib
 import json
-import glob
 from urllib.parse import unquote, parse_qsl
 from fastapi import FastAPI, Depends, HTTPException, Header
 from pydantic import BaseModel
 import psycopg2
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Dict
 from fastapi.middleware.cors import CORSMiddleware
 from psycopg2.extras import RealDictCursor
 
 # --- Настройки ---
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
-CONTENT_DIR = "/app/content" 
 
 app = FastAPI()
 
 # --- Настройка CORS ---
 origins = [
-    "https://minifront.karpix.com",  # <-- Ваш фронтенд
-    "https://miniback.karpix.com",   # <-- Ваш бэкенд (на всякий случай)
-    "http://localhost:3000",       # <-- Для локальной разработки
+    "https://minifront.karpix.com",
+    "https://miniback.karpix.com", 
+    "http://localhost:3000",
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -32,7 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Обновленные модели данных ---
+# --- Модели данных ---
 class UserRank(BaseModel): 
     name: str
     min_points: int
@@ -54,7 +52,6 @@ class RankInfo(BaseModel):
     min_points: int
     is_unlocked: bool
 
-# НОВЫЕ МОДЕЛИ ДЛЯ КУРСОВ
 class LessonInfo(BaseModel):
     id: str
     title: str
@@ -89,10 +86,8 @@ class LessonContent(BaseModel):
     course_id: str
     section_id: str
 
-# <-- НАЧАЛО ИЗМЕНЕНИЙ 1: НОВАЯ МОДЕЛЬ ОТВЕТА -->
 class CompletionStatus(BaseModel):
     status: str
-# <-- КОНЕЦ ИЗМЕНЕНИЙ 1 -->
 
 # СТАРЫЕ МОДЕЛИ (для обратной совместимости)
 class ArticleInfo(BaseModel): 
@@ -168,7 +163,6 @@ def validate_init_data(init_data: str, bot_token: str) -> Optional[dict]:
     except Exception: 
         return None
 
-# <-- НАЧАЛО ИЗМЕНЕНИЙ 2: ИЗМЕНЕННАЯ ФУНКЦИЯ АУТЕНТИФИКАЦИИ -->
 async def get_current_user(x_init_data: str = Header(None), db=Depends(get_db_connection)):
     if not x_init_data: 
         raise HTTPException(status_code=401, detail="X-Init-Data header is missing")
@@ -178,79 +172,79 @@ async def get_current_user(x_init_data: str = Header(None), db=Depends(get_db_co
     
     user_id = user_data.get("id")
     
-    # Проверка пользователя в базе данных
     cur = db.cursor()
     cur.execute("SELECT is_active FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
     db_user = cur.fetchone()
     cur.close()
 
-    # Блокируем доступ, только если пользователь найден в базе И он неактивен.
-    # Если пользователя в базе нет, мы ему доверяем (т.к. initData валидна).
     if db_user and db_user.get('is_active') is False:
         raise HTTPException(status_code=403, detail="Access denied. You must be an active member of the group.")
 
     return user_data
-# <-- КОНЕЦ ИЗМЕНЕНИЙ 2 -->
 
+# --- НОВЫЕ ФУНКЦИИ ДЛЯ РАБОТЫ С КУРСАМИ ИЗ БД ---
 
-# --- НОВЫЕ ФУНКЦИИ ДЛЯ РАБОТЫ С КУРСАМИ ---
-
-def load_course_metadata(course_path: str) -> dict:
-    """Загружает метаданные курса из course.json"""
-    metadata_file = os.path.join(course_path, "course.json")
-    if os.path.exists(metadata_file):
-        with open(metadata_file, 'r', encoding='utf-8') as f:
-            return json.load(f)
+def get_courses_from_db(db) -> Dict[str, dict]:
+    """Получает все курсы из БД и группирует их"""
+    cur = db.cursor()
+    cur.execute("""
+        SELECT DISTINCT course_id, 
+               COALESCE(MIN(sort_order), 0) as min_sort_order
+        FROM lessons 
+        GROUP BY course_id 
+        ORDER BY min_sort_order, course_id
+    """)
+    courses_data = cur.fetchall()
+    cur.close()
     
-    course_id = os.path.basename(course_path)
-    return {
-        "title": f"Курс {course_id}",
-        "description": "Описание курса",
-        "rank_required": 1,
-        "sections": [
-            {
-                "id": "main",
-                "title": "Основной раздел", 
+    courses = {}
+    for course_row in courses_data:
+        course_id = course_row['course_id']
+        # Базовые метаданные курса (можно расширить через отдельную таблицу)
+        courses[course_id] = {
+            "id": course_id,
+            "title": f"Курс {course_id.title()}",
+            "description": f"Описание курса {course_id}",
+            "rank_required": 1,  # По умолчанию доступен всем
+        }
+    
+    return courses
+
+def get_course_sections_from_db(db, course_id: str) -> List[dict]:
+    """Получает секции и уроки курса из БД"""
+    cur = db.cursor()
+    cur.execute("""
+        SELECT section_id, lesson_slug, title, sort_order
+        FROM lessons 
+        WHERE course_id = %s 
+        ORDER BY section_id, sort_order, lesson_slug
+    """, (course_id,))
+    lessons_data = cur.fetchall()
+    cur.close()
+    
+    # Группируем уроки по секциям
+    sections_dict = {}
+    for lesson in lessons_data:
+        section_id = lesson['section_id']
+        if section_id not in sections_dict:
+            sections_dict[section_id] = {
+                "id": section_id,
+                "title": f"Секция {section_id.title()}",
                 "lessons": []
             }
-        ]
-    }
-
-def scan_course_lessons(course_path: str, sections: list) -> list:
-    """Сканирует уроки в курсе и обновляет секции"""
-    updated_sections = []
-    
-    for section in sections:
-        section_path = os.path.join(course_path, section["id"])
-        lessons = []
         
-        if os.path.exists(section_path) and os.path.isdir(section_path):
-            for md_file in glob.glob(os.path.join(section_path, "*.md")):
-                lesson_id = os.path.splitext(os.path.basename(md_file))[0]
-                
-                with open(md_file, 'r', encoding='utf-8') as f:
-                    first_line = f.readline().strip()
-                    title = first_line.lstrip('#').strip() if first_line.startswith('#') else lesson_id
-                
-                lessons.append({
-                    "id": lesson_id,
-                    "title": title
-                })
-        
-        updated_sections.append({
-            "id": section["id"],
-            "title": section["title"],
-            "lessons": lessons
+        sections_dict[section_id]["lessons"].append({
+            "id": lesson['lesson_slug'],
+            "title": lesson['title']
         })
     
-    return updated_sections
+    return list(sections_dict.values())
 
-# --- НОВЫЕ ЭНДПОИНТЫ ДЛЯ КУРСОВ ---
+# --- ОБНОВЛЕННЫЕ ЭНДПОИНТЫ ДЛЯ КУРСОВ (ЧИТАЮТ ИЗ БД) ---
 
-# <-- НАЧАЛО ИЗМЕНЕНИЙ 3: ОБНОВЛЕННЫЙ ЭНДПОИНТ GET_COURSES -->
 @app.get("/api/courses", response_model=List[CourseInfo])
 async def get_courses(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
-    """Получить список всех доступных курсов"""
+    """Получить список всех доступных курсов из БД"""
     user_id = user.get("id")
     
     cur = db.cursor()
@@ -260,52 +254,42 @@ async def get_courses(user: dict = Depends(get_current_user), db=Depends(get_db_
     points = (db_user['message_count'] * 2) if db_user and db_user['message_count'] is not None else 0
     user_rank_level = get_rank_level(points)
     
+    # Получаем курсы из БД
+    courses_data = get_courses_from_db(db)
     courses = []
     
-    if os.path.exists(CONTENT_DIR):
-        for item in os.listdir(CONTENT_DIR):
-            course_path = os.path.join(CONTENT_DIR, item)
+    for course_id, course_meta in courses_data.items():
+        if course_meta.get("rank_required", 1) <= user_rank_level:
+            # Считаем общее количество уроков в курсе
+            cur.execute("SELECT COUNT(*) FROM lessons WHERE course_id = %s", (course_id,))
+            total_lessons = cur.fetchone()['count']
             
-            if os.path.isdir(course_path):
-                metadata = load_course_metadata(course_path)
-                
-                if metadata.get("rank_required", 1) <= user_rank_level:
-                    sections = scan_course_lessons(course_path, metadata.get("sections", []))
-                    total_lessons = sum(len(section["lessons"]) for section in sections)
-                    
-                    # Получаем прогресс для этого конкретного курса
-                    cur.execute("""
-                        SELECT COUNT(*) FROM user_lesson_progress
-                        WHERE user_id = %s AND course_id = %s;
-                    """, (user_id, item))
-                    completed_lessons_data = cur.fetchone()
-                    completed_lessons = completed_lessons_data['count'] if completed_lessons_data else 0
-                    
-                    progress = int((completed_lessons / total_lessons) * 100) if total_lessons > 0 else 0
-                    
-                    courses.append(CourseInfo(
-                        id=item,
-                        title=metadata.get("title", item),
-                        description=metadata.get("description", ""),
-                        rank_required=metadata.get("rank_required", 1),
-                        progress=progress,
-                        total_lessons=total_lessons,
-                        completed_lessons=completed_lessons
-                    ))
+            # Получаем прогресс пользователя для этого курса
+            cur.execute("""
+                SELECT COUNT(*) FROM user_lesson_progress
+                WHERE user_id = %s AND course_id = %s;
+            """, (user_id, course_id))
+            completed_lessons = cur.fetchone()['count']
+            
+            progress = int((completed_lessons / total_lessons) * 100) if total_lessons > 0 else 0
+            
+            courses.append(CourseInfo(
+                id=course_id,
+                title=course_meta["title"],
+                description=course_meta["description"],
+                rank_required=course_meta["rank_required"],
+                progress=progress,
+                total_lessons=total_lessons,
+                completed_lessons=completed_lessons
+            ))
     
     cur.close()
     return courses
-# <-- КОНЕЦ ИЗМЕНЕНИЙ 3 -->
 
-# <-- НАЧАЛО ИЗМЕНЕНИЙ 4: ОБНОВЛЕННЫЙ ЭНДПОИНТ GET_COURSE_DETAIL -->
 @app.get("/api/courses/{course_id}", response_model=CourseDetail)
 async def get_course_detail(course_id: str, user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
-    """Получить детальную информацию о курсе"""
+    """Получить детальную информацию о курсе из БД"""
     user_id = user.get("id")
-    course_path = os.path.join(CONTENT_DIR, course_id)
-    
-    if not os.path.isdir(course_path):
-        raise HTTPException(status_code=404, detail="Курс не найден")
     
     cur = db.cursor()
     cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
@@ -314,14 +298,28 @@ async def get_course_detail(course_id: str, user: dict = Depends(get_current_use
     points = (db_user['message_count'] * 2) if db_user and db_user['message_count'] is not None else 0
     user_rank_level = get_rank_level(points)
     
-    metadata = load_course_metadata(course_path)
+    # Проверяем, существует ли курс
+    cur.execute("SELECT COUNT(*) FROM lessons WHERE course_id = %s", (course_id,))
+    if cur.fetchone()['count'] == 0:
+        cur.close()
+        raise HTTPException(status_code=404, detail="Курс не найден")
     
-    if metadata.get("rank_required", 1) > user_rank_level:
+    # Получаем метаданные курса
+    courses_data = get_courses_from_db(db)
+    if course_id not in courses_data:
+        cur.close()
+        raise HTTPException(status_code=404, detail="Курс не найден")
+    
+    course_meta = courses_data[course_id]
+    
+    if course_meta.get("rank_required", 1) > user_rank_level:
         cur.close()
         raise HTTPException(status_code=403, detail="Недостаточно прав для доступа к курсу")
     
-    sections = scan_course_lessons(course_path, metadata.get("sections", []))
+    # Получаем секции и уроки
+    sections = get_course_sections_from_db(db, course_id)
     
+    # Получаем прогресс пользователя
     cur.execute("""
         SELECT lesson_id FROM user_lesson_progress
         WHERE user_id = %s AND course_id = %s;
@@ -329,6 +327,7 @@ async def get_course_detail(course_id: str, user: dict = Depends(get_current_use
     completed_lesson_rows = cur.fetchall()
     completed_lesson_ids = {row['lesson_id'] for row in completed_lesson_rows}
     
+    # Отмечаем завершенные уроки
     total_lessons = 0
     for section in sections:
         total_lessons += len(section['lessons'])
@@ -341,55 +340,58 @@ async def get_course_detail(course_id: str, user: dict = Depends(get_current_use
     
     return CourseDetail(
         id=course_id,
-        title=metadata.get("title", course_id),
-        description=metadata.get("description", ""),
-        rank_required=metadata.get("rank_required", 1),
+        title=course_meta["title"],
+        description=course_meta["description"],
+        rank_required=course_meta["rank_required"],
         sections=sections,
         progress=progress
     )
-# <-- КОНЕЦ ИЗМЕНЕНИЙ 4 -->
 
 @app.get("/api/courses/{course_id}/lessons/{lesson_id}", response_model=LessonContent)
 async def get_lesson_content(course_id: str, lesson_id: str, user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
-    """Получить содержимое конкретного урока"""
+    """Получить содержимое конкретного урока из БД"""
     user_id = user.get("id")
-    course_path = os.path.join(CONTENT_DIR, course_id)
-    
-    if not os.path.exists(course_path) or not os.path.isdir(course_path):
-        raise HTTPException(status_code=404, detail="Курс не найден")
     
     cur = db.cursor()
     cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
     db_user = cur.fetchone()
-    cur.close()
     
     points = (db_user['message_count'] * 2) if db_user and db_user['message_count'] is not None else 0
     user_rank_level = get_rank_level(points)
     
-    metadata = load_course_metadata(course_path)
-    if metadata.get("rank_required", 1) > user_rank_level:
+    # Проверяем права доступа к курсу
+    courses_data = get_courses_from_db(db)
+    if course_id not in courses_data:
+        cur.close()
+        raise HTTPException(status_code=404, detail="Курс не найден")
+    
+    course_meta = courses_data[course_id]
+    if course_meta.get("rank_required", 1) > user_rank_level:
+        cur.close()
         raise HTTPException(status_code=403, detail="Недостаточно прав")
     
-    lesson_file, section_id = None, None
-    for section in metadata.get("sections", []):
-        section_path = os.path.join(course_path, section["id"])
-        potential_file = os.path.join(section_path, f"{lesson_id}.md")
-        
-        if os.path.exists(potential_file):
-            lesson_file, section_id = potential_file, section["id"]
-            break
+    # Получаем урок из БД
+    cur.execute("""
+        SELECT section_id, title, content
+        FROM lessons 
+        WHERE course_id = %s AND lesson_slug = %s
+    """, (course_id, lesson_id))
+    lesson_data = cur.fetchone()
     
-    if not lesson_file:
+    if not lesson_data:
+        cur.close()
         raise HTTPException(status_code=404, detail="Урок не найден")
     
-    with open(lesson_file, 'r', encoding='utf-8') as f:
-        content = f.read()
-        lines = content.split('\n')
-        title = lines[0].lstrip('#').strip() if lines and lines[0].startswith('#') else lesson_id
+    cur.close()
     
-    return LessonContent(id=lesson_id, title=title, content=content, course_id=course_id, section_id=section_id)
+    return LessonContent(
+        id=lesson_id,
+        title=lesson_data['title'],
+        content=lesson_data['content'] or "",
+        course_id=course_id,
+        section_id=lesson_data['section_id']
+    )
 
-# <-- НАЧАЛО ИЗМЕНЕНИЙ 5: НОВЫЙ ЭНДПОИНТ ДЛЯ ЗАВЕРШЕНИЯ УРОКА -->
 @app.post("/api/courses/{course_id}/lessons/{lesson_id}/complete", response_model=CompletionStatus)
 async def mark_lesson_as_complete(
     course_id: str, 
@@ -412,86 +414,80 @@ async def mark_lesson_as_complete(
         raise HTTPException(status_code=500, detail="Database error")
 
     return CompletionStatus(status="completed")
-# <-- КОНЕЦ ИЗМЕНЕНИЙ 5 -->
-
 
 # --- СТАРЫЕ ЭНДПОИНТЫ (для обратной совместимости) ---
 
 @app.get("/api/content", response_model=List[ArticleInfo])
 async def get_content_list_legacy(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
-    """Старый эндпоинт для обратной совместимости"""
+    """Старый эндпоинт - теперь читает из БД"""
     user_id = user.get("id")
     
     cur = db.cursor()
     cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
     db_user = cur.fetchone()
-    cur.close()
     
     points = (db_user['message_count'] * 2) if db_user and db_user['message_count'] is not None else 0
     user_rank_level = get_rank_level(points)
     
+    # Получаем статьи из БД (для обратной совместимости)
+    cur.execute("""
+        SELECT lesson_slug, title, sort_order
+        FROM lessons 
+        WHERE course_id = 'legacy' 
+        ORDER BY sort_order, lesson_slug
+    """)
+    lessons = cur.fetchall()
+    
     available_articles = []
-    search_path = os.path.join(CONTENT_DIR, "*.md")
+    for lesson in lessons:
+        # Используем sort_order как rank_required для совместимости
+        rank_required = lesson['sort_order'] if lesson['sort_order'] > 0 else 1
+        
+        if rank_required <= user_rank_level:
+            available_articles.append(ArticleInfo(
+                id=lesson['lesson_slug'],
+                title=lesson['title'],
+                rank_required=rank_required
+            ))
     
-    for filepath in glob.glob(search_path):
-        filename = os.path.basename(filepath)
-        try:
-            parts = filename.split('__')
-            if len(parts) >= 2:
-                rank_required = int(parts[0])
-                article_id = parts[1].replace('.md', '')
-                
-                if rank_required <= user_rank_level:
-                    with open(filepath, 'r', encoding='utf-8') as f:
-                        title = f.readline().strip().lstrip('#').strip()
-                    
-                    available_articles.append(ArticleInfo(
-                        id=article_id, 
-                        title=title, 
-                        rank_required=rank_required
-                    ))
-        except (ValueError, IndexError):
-            continue
-    
-    available_articles.sort(key=lambda x: x.rank_required)
+    cur.close()
     return available_articles
 
 @app.get("/api/content/{article_id}", response_model=ArticleContent)
 async def get_article_legacy(article_id: str, user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
-    """Старый эндпоинт для обратной совместимости"""
+    """Старый эндпоинт - теперь читает из БД"""
     user_id = user.get("id")
     
     cur = db.cursor()
     cur.execute("SELECT message_count FROM channel_subscribers WHERE telegram_id = %s", (user_id,))
     db_user = cur.fetchone()
-    cur.close()
     
     points = (db_user['message_count'] * 2) if db_user and db_user['message_count'] is not None else 0
     user_rank_level = get_rank_level(points)
     
-    search_pattern = os.path.join(CONTENT_DIR, f"*__{article_id}.md")
-    found_files = glob.glob(search_pattern)
+    # Получаем статью из БД
+    cur.execute("""
+        SELECT content, sort_order
+        FROM lessons 
+        WHERE course_id = 'legacy' AND lesson_slug = %s
+    """, (article_id,))
+    lesson = cur.fetchone()
     
-    if not found_files:
+    if not lesson:
+        cur.close()
         raise HTTPException(status_code=404, detail="Статья не найдена")
     
-    found_path = found_files[0]
-    filename = os.path.basename(found_path)
+    rank_required = lesson['sort_order'] if lesson['sort_order'] > 0 else 1
     
-    try: 
-        target_rank_required = int(filename.split('__')[0])
-    except (ValueError, IndexError): 
-        raise HTTPException(status_code=500, detail="Invalid file name")
-    
-    if user_rank_level < target_rank_required: 
+    if user_rank_level < rank_required:
+        cur.close()
         raise HTTPException(status_code=403, detail="Недостаточно прав")
     
-    with open(found_path, 'r', encoding='utf-8') as f: 
-        content = f.read()
+    cur.close()
     
-    return ArticleContent(id=article_id, content=content)
+    return ArticleContent(id=article_id, content=lesson['content'] or "")
 
-# --- ОСТАЛЬНЫЕ ЭНДПОИНТЫ (лидерборд, профиль, ранги) остаются без изменений ---
+# --- ОСТАЛЬНЫЕ ЭНДПОИНТЫ (лидерборд, профиль, ранги) ---
 
 @app.get("/api/leaderboard", response_model=LeaderboardResponse)
 async def get_leaderboard_by_period(
