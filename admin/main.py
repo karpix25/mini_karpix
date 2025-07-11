@@ -439,15 +439,23 @@ async def create_course(
     cover_image_url: str = Form(""),
     access_type: str = Form("level"),
     access_level: int = Form(1),
-    access_days: int = Form(None)
+    access_days: str = Form("")  # Изменили на str
 ):
     conn = get_db()
     cur = conn.cursor()
     
+    # Преобразуем access_days в int или None
+    days_value = None
+    if access_days and access_days.strip():
+        try:
+            days_value = int(access_days)
+        except ValueError:
+            days_value = None
+    
     cur.execute("""
         INSERT INTO courses (name, description, cover_image_url, access_type, access_level, access_days)
         VALUES (%s, %s, %s, %s, %s, %s)
-    """, (name, description, cover_image_url, access_type, access_level, access_days))
+    """, (name, description, cover_image_url, access_type, access_level, days_value))
     
     conn.commit()
     cur.close()
@@ -477,17 +485,25 @@ async def update_course(
     cover_image_url: str = Form(""),
     access_type: str = Form("level"),
     access_level: int = Form(1),
-    access_days: int = Form(None)
+    access_days: str = Form("")  # Изменили на str
 ):
     conn = get_db()
     cur = conn.cursor()
+    
+    # Преобразуем access_days в int или None
+    days_value = None
+    if access_days and access_days.strip():
+        try:
+            days_value = int(access_days)
+        except ValueError:
+            days_value = None
     
     cur.execute("""
         UPDATE courses 
         SET name=%s, description=%s, cover_image_url=%s, access_type=%s, 
             access_level=%s, access_days=%s, updated_at=NOW()
         WHERE id=%s
-    """, (name, description, cover_image_url, access_type, access_level, access_days, course_id))
+    """, (name, description, cover_image_url, access_type, access_level, days_value, course_id))
     
     conn.commit()
     cur.close()
