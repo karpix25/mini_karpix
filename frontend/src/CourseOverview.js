@@ -1,263 +1,190 @@
-/* ===== ОСНОВНОЙ КОНТЕЙНЕР ===== */
-.course-overview-container {
-  background-color: var(--tg-theme-bg-color, #FFFFFF); 
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  padding: 0; 
-  color: var(--tg-theme-text-color, #1A1A1A); 
-  min-height: calc(100vh - var(--tg-theme-header-height, 56px) - var(--tg-theme-footer-height, 56px)); 
-}
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import './CourseOverview.css';
 
-/* ===== ЗАГОЛОВОК КУРСА И ПРОГРЕСС-БАР (ПРОСТОЙ ВЕРХНИЙ ХЕДЕР) ===== */
-.course-simple-header {
-  background: var(--tg-theme-bg-color, #FFFFFF); 
-  padding: 20px; /* Общий отступ для хедера */
-  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); 
-  text-align: left; 
-}
+const tg = window.Telegram?.WebApp;
+const BACKEND_URL = "https://miniback.karpix.com";
 
-.course-simple-title {
-  margin: 0 0 16px 0; 
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--tg-theme-text-color, #1A1A1A); 
-  line-height: 1.3;
-}
+// Компонент одной строки урока в списке
+const LessonListItem = ({ lesson, isUnlocked, onLessonClick }) => {
+  return (
+    <li
+      className={`lesson-list-item ${!isUnlocked ? 'locked' : ''} ${lesson.completed ? 'completed' : ''}`}
+      onClick={() => isUnlocked && onLessonClick(lesson.id)}
+    >
+      <span className="lesson-item-number">{lesson.sort_order}</span> {/* Явная нумерация урока, БЕЗ ТОЧКИ */}
+      <span className="lesson-item-title">{lesson.title}</span>
+    </li>
+  );
+};
 
-/* Стили для нового прогресс-бара */
-.course-simple-progress-bar {
-  height: 28px; 
-  background-color: var(--tg-theme-secondary-bg-color, #E9ECEF); 
-  border-radius: 14px; 
-  overflow: hidden;
-  position: relative; 
-  display: flex; 
-  align-items: center; 
-}
+// Компонент секции курса (теперь с возможностью переключения)
+const CourseSection = ({ section, onLessonClick, userRankLevel, isInitiallyExpanded = false }) => {
+  const [isExpanded, setIsExpanded] = useState(isInitiallyExpanded);
 
-.course-simple-progress-fill {
-  height: 100%;
-  background: var(--tg-theme-link-color, #007BFF); 
-  border-radius: 14px; 
-  transition: width 0.3s ease;
-  position: absolute; 
-  left: 0;
-  top: 0;
-  z-index: 1; 
-}
+  const handleToggle = () => {
+    setIsExpanded(prev => !prev);
+    if (tg) tg.HapticFeedback.impactOccurred('light'); 
+  };
 
-.progress-percentage-text {
-  position: relative; 
-  z-index: 2; 
-  font-size: 14px; 
-  font-weight: 600;
-  color: var(--tg-theme-text-color, #1A1A1A); 
-  margin-left: 14px; 
-}
+  const isSectionUnlocked = true; 
+  
+  return (
+    <div className="course-section-group">
+      <div className="course-section-header" onClick={handleToggle}>
+        {/* ИКОНКА ПЕРЕКЛЮЧЕНИЯ В НАЧАЛЕ */}
+        {/* Используем Font Awesome иконку, если она подключена в проекте, или SVG */}
+        <div className={`toggle-icon-wrapper ${isExpanded ? 'expanded' : ''}`}>
+             <svg className="toggle-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+        
+        <div className="section-info">
+          {section.title && <span className="course-section-title-text">{section.title.replace(/^Секция\s*/, '')}</span>}
+        </div>
+      </div>
+      
+      {isExpanded && (
+        <ol className="section-lessons-list">
+          {section.lessons.map((lesson) => (
+            <LessonListItem 
+              key={lesson.id}
+              lesson={lesson}
+              isUnlocked={isSectionUnlocked && (lesson.rank_required <= userRankLevel)} 
+              onLessonClick={onLessonClick}
+            />
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+};
 
+function CourseOverview() {
+  const { courseId } = useParams();
+  const navigate = useNavigate();
+  const [course, setCourse] = useState(null);
+  const [loading, setLoading] = useState(true); 
+  const [error, setError] = useState(null);
+  const [userRankLevel, setUserRankLevel] = useState(1); 
 
-/* ===== СПИСОК СЕКЦИЙ/УРОКОВ ===== */
-.course-sections-list-wrapper {
-  /* ЭТОТ ОБЩИЙ PADDING УБИРАЕМ, чтобы отдельные элементы контролировали свои отступы */
-  padding: 0; 
-}
+  // Настройка Telegram BackButton
+  useEffect(() => {
+    if (tg) {
+      tg.BackButton.show();
+      const onBackClick = () => navigate('/content'); 
+      tg.BackButton.onClick(onBackClick);
+      return () => tg.BackButton.offClick(onBackClick);
+    }
+  }, [navigate]);
 
-/* Обертка для каждой секции (без фона) */
-.course-section-group {
-    /* Нет фонов или границ, это просто контейнер для заголовка и списка уроков */
-}
+  // Загрузка данных курса
+  useEffect(() => {
+    const fetchCourseData = async () => {
+      if (!tg?.initData) {
+        setError("Приложение должно быть открыто в Telegram.");
+        setLoading(false);
+        return;
+      }
 
-/* Заголовок секции с возможностью переключения */
-.course-section-header {
-    display: flex;
-    justify-content: flex-start; 
-    align-items: center;
-    padding: 20px 20px; /* НОВОЕ: Боковые отступы здесь */
-    cursor: pointer;
-    border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); 
-    transition: background-color 0.2s ease;
-    text-align: left; 
-}
-.course-section-header:hover {
-    background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); 
-}
+      try {
+        const headers = { 'X-Init-Data': tg.initData };
+        
+        const userResponse = await fetch(`${BACKEND_URL}/api/me`, { headers });
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          const rankLevel = Math.floor((userData.points || 0) / 50) + 1;
+          setUserRankLevel(Math.min(rankLevel, 4)); 
+        }
 
-.section-info { 
-    flex-grow: 1; 
-    margin-left: 10px; /* Отступ текста от стрелки/иконки */
-}
+        const courseResponse = await fetch(`${BACKEND_URL}/api/courses/${courseId}`, { headers });
+        
+        if (!courseResponse.ok) {
+          if (courseResponse.status === 404) { throw new Error('Курс не найден'); }
+          if (courseResponse.status === 403) { throw new Error('Недостаточно прав для доступа к курсу'); }
+          throw new Error('Не удалось загрузить курс');
+        }
+        
+        const courseData = await courseResponse.json();
+        setCourse(courseData);
+        
+      } catch (error) {
+        console.error('Ошибка загрузки курса:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-.course-section-title-text {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--tg-theme-text-color, #1A1A1A);
-    margin: 0; 
-}
+    fetchCourseData();
+  }, [courseId]);
 
-/* Стилизация новой иконки переключения */
-.toggle-icon-wrapper {
-    flex-shrink: 0;
-    width: 24px; 
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s ease;
-    margin-right: 10px; 
-}
+  const handleLessonClick = (lessonId) => {
+    navigate(`/course/${courseId}/lesson/${lessonId}`);
+  };
 
-.toggle-icon {
-    width: 16px; 
-    height: 16px;
-    stroke: var(--tg-theme-hint-color, #6C757D); 
-    stroke-width: 2; 
-}
-
-.toggle-icon-wrapper.expanded .toggle-icon {
-    transform: rotate(180deg); 
-}
-
-/* Стиль для списка уроков внутри секции */
-.section-lessons-list { 
-  list-style: none; /* Убираем дефолтные маркеры */
-  padding-left: 0; /* УБИРАЕМ: Это не нужно, так как lesson-list-item сам управляет отступом */
-  margin: 0;
-}
-
-/* Стили для отдельных элементов списка уроков */
-.lesson-list-item { 
-  padding: 12px 20px; /* НОВОЕ: Боковые отступы здесь */
-  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); 
-  font-size: 16px;
-  color: var(--tg-theme-text-color, #1A1A1A); 
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  display: flex; 
-  align-items: baseline; 
-  text-align: left; 
-}
-
-.lesson-list-item:last-child {
-  border-bottom: none; 
-}
-
-.lesson-list-item:hover {
-  background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); 
-}
-
-.lesson-list-item.completed {
-  color: var(--tg-theme-hint-color, #6C757D); 
-}
-
-.lesson-list-item.locked {
-  opacity: 0.6;
-  cursor: not-allowed;
-  color: var(--tg-theme-hint-color, #6C757D); 
-}
-
-.lesson-item-number {
-    flex-shrink: 0; 
-    width: 30px; 
-    text-align: left; /* Выравнивание номера по левому краю */
-    margin-right: 10px; /* Отступ от заголовка */
-    font-weight: 600; 
-    color: var(--tg-theme-text-color, #1A1A1A); 
-}
-
-.lesson-item-title {
-  flex-grow: 1; 
-}
-
-/* ===== ОБЩИЕ СОСТОЯНИЯ ЗАГРУЗКИ И ОШИБКИ ===== */
-.common-loading-error-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    text-align: center;
-    background-color: var(--tg-theme-bg-color, #FFFFFF); 
-    color: var(--tg-theme-text-color, #1A1A1A);
-}
-
-.common-loading-error-state .loading-spinner { 
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--tg-theme-secondary-bg-color, #E9ECEF);
-    border-top: 3px solid var(--tg-theme-link-color, #007BFF);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 16px;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.common-loading-error-state p {
-    margin: 0;
-    font-size: 16px;
-    color: var(--tg-theme-hint-color, #6C757D);
-}
-
-.common-loading-error-state h2 { 
-  margin: 0 0 16px 0;
-  font-size: 20px;
-  color: var(--tg-theme-text-color, #1A1A1A);
-}
-
-.common-loading-error-state .back-button { 
-  background: var(--tg-theme-button-color, #007bff);
-  color: var(--tg-theme-button-text-color, #ffffff);
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
-}
-
-.common-loading-error-state .back-button:hover {
-  opacity: 0.9;
-}
-
-
-/* ===== АДАПТИВНОСТЬ ===== */
-@media (max-width: 768px) {
-  .course-simple-title {
-    font-size: 20px;
+  if (loading) {
+    return (
+      <div className="course-overview-container common-loading-error-state">
+        <div className="loading-spinner"></div>
+        <p>Загружается курс...</p>
+      </div>
+    );
   }
-  .lesson-list-item {
-    font-size: 15px;
-    padding: 10px 16px; /* НОВОЕ: Боковые отступы на мобильных */
+
+  if (error) {
+    return (
+      <div className="course-overview-container common-loading-error-state">
+        <h2>Ошибка загрузки</h2>
+        <p>{error}</p>
+        <button onClick={() => navigate('/content')} className="back-button">
+          ← Вернуться к курсам
+        </button>
+      </div>
+    );
   }
-  .course-sections-list-wrapper {
-    padding: 0; /* НОВОЕ: убираем padding и на мобильных */
+
+  if (!course) {
+    return (
+      <div className="course-overview-container common-loading-error-state">
+        <h2>Курс не найден</h2>
+        <button onClick={() => navigate('/content')} className="back-button">
+          ← Вернуться к курсам
+        </button>
+      </div>
+    );
   }
-  .course-section-header {
-    padding: 16px 16px; /* НОВОЕ: уменьшаем padding на мобильных */
-  }
-  .lesson-item-number {
-    width: 25px; 
-    margin-right: 8px;
-  }
+
+  const progressPercentage = course.progress || 0;
+
+  return (
+    <div className="course-overview-container">
+      {/* Заголовок курса и прогресс-бар */}
+      <div className="course-simple-header">
+        <h1 className="course-simple-title">{course.title}</h1>
+        {/* Прогресс-бар с текстом внутри */}
+        <div className="course-simple-progress-bar">
+          <div 
+            className="course-simple-progress-fill" 
+            style={{ width: `${progressPercentage}%` }}
+          ></div>
+          <span className="progress-percentage-text">{progressPercentage}%</span>
+        </div>
+      </div>
+
+      {/* Список секций/уроков */}
+      <div className="course-sections-list-wrapper">
+        {course.sections?.map((section, index) => (
+          <CourseSection
+            key={section.id}
+            section={section}
+            onLessonClick={handleLessonClick}
+            userRankLevel={userRankLevel} 
+            isInitiallyExpanded={index === 0} // Разворачиваем первую секцию по умолчанию
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
-/* Анимация slideDown для раскрывающихся секций */
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    max-height: 0;
-    overflow: hidden;
-  }
-  to {
-    opacity: 1;
-    max-height: 1000px; 
-    overflow: visible;
-  }
-}
-.section-lessons-list {
-    animation: slideDown 0.3s ease-out;
-}
+export default CourseOverview;
