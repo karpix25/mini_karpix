@@ -17,7 +17,7 @@
 }
 
 .course-simple-title {
-  margin: 0 0 16px 0; /* Отступ от прогресс-бара */
+  margin: 0 0 16px 0; /* Увеличили отступ от прогресс-бара */
   font-size: 24px;
   font-weight: 700;
   color: var(--tg-theme-text-color, #1A1A1A); /* Адаптивный текст */
@@ -63,7 +63,7 @@
 
 /* Обертка для каждой секции (без фона) */
 .course-section-group {
-    /* Никаких фонов или границ, просто контейнер */
+    /* Нет фонов или границ, это просто контейнер для заголовка и списка уроков */
 }
 
 /* Заголовок секции с возможностью переключения */
@@ -75,6 +75,7 @@
     cursor: pointer;
     border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); /* Разделитель */
     transition: background-color 0.2s ease;
+    text-align: left; /* Важно: выравнивание по левому краю */
 }
 .course-section-header:hover {
     background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); /* Легкий ховер */
@@ -84,18 +85,17 @@
     font-size: 18px;
     font-weight: 600;
     color: var(--tg-theme-text-color, #1A1A1A);
-    margin: 0; /* Убираем дефолтные марджины */
-    text-align: left; /* Выравнивание по левому краю */
+    margin: 0; 
 }
 
 .section-controls {
     display: flex;
     align-items: center;
-    gap: 8px; /* Отступ между элементами управления */
+    gap: 8px; 
 }
 
 .toggle-arrow {
-    font-size: 14px; /* Размер стрелки */
+    font-size: 14px; 
     color: var(--tg-theme-hint-color, #6C757D);
     transition: transform 0.2s ease;
 }
@@ -108,21 +108,14 @@
   list-style: none; /* Убираем дефолтные маркеры */
   padding-left: 0; 
   margin: 0;
-  /* Уроки внутри разворачивающейся секции также имеют границу сверху, 
-     чтобы отделить их от заголовка секции или предыдущей секции, 
-     если секция не первая в списке и не имеет заголовка.
-     Этот border-top будет дублироваться с border-bottom у course-section-header
-     для первого урока, но это можно скорректировать с помощью first-child */
-  border-top: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); 
+  /* Для адаптации к дизайну Automtable, первый элемент списка в секции
+     может не иметь верхнего бордера, если сама секция уже имеет бордер.
+     Либо можно просто иметь бордеры между всеми элементами списка.
+     На скриншоте Automtable, кажется, нет бордера сверху списка, если секция не раскрыта. */
 }
 
-/* Скрываем верхний border у первого урока в секции, если у секции есть заголовок */
-.section-lessons-list .lesson-list-item:first-child {
-    border-top: none; 
-}
-
-
-.lesson-list-item { /* Стиль для <li> */
+/* Стили для отдельных элементов списка уроков */
+.lesson-list-item { 
   padding: 12px 0; 
   border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); /* Тонкий разделитель */
   font-size: 16px;
@@ -130,9 +123,9 @@
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  display: flex; 
-  align-items: baseline; 
-  text-align: left; 
+  display: flex; /* Для выравнивания номера и текста */
+  align-items: baseline; /* Выравнивание по базовой линии текста */
+  text-align: left; /* Выравнивание всего элемента по левому краю */
 }
 
 .lesson-list-item:last-child {
@@ -155,11 +148,11 @@
 
 .lesson-item-number {
     flex-shrink: 0; 
-    width: 30px; 
-    text-align: left; /* ВЫРАВНИВАНИЕ ПО ЛЕВОМУ КРАЮ */
-    margin-right: 10px; 
+    width: 30px; /* Фиксированная ширина для номера */
+    text-align: left; /* Выравнивание номера по левому краю */
+    margin-right: 10px; /* Отступ от заголовка */
     font-weight: 600; 
-    color: var(--tg-theme-text-color, #1A1A1A); 
+    color: var(--tg-theme-text-color, #1A1A1A); /* Адаптивный цвет номера */
 }
 
 .lesson-item-title {
@@ -172,7 +165,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 60vh;
+    /* Убрали min-height, чтобы не было лишней прокрутки если контента мало */
+    /* min-height: 100vh; */ 
     padding: 20px;
     text-align: center;
     background-color: var(--tg-theme-bg-color, #FFFFFF); 
