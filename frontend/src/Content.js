@@ -6,7 +6,7 @@ const tg = window.Telegram?.WebApp;
 const BACKEND_URL = "https://miniback.karpix.com";
 
 // Компонент для одной карточки курса
-const CourseCard = ({ article, progress = 0 }) => {
+const CourseCard = ({ course }) => {
   // Генерируем цвета для превью на основе ID
   const getPreviewColor = (id) => {
     const colors = [
@@ -29,15 +29,15 @@ const CourseCard = ({ article, progress = 0 }) => {
     return { text: 'Легенда', color: '#dc3545' };
   };
 
-  const status = getStatusBadge(article.rank_required);
+  const status = getStatusBadge(course.rank_required);
 
   return (
-    <Link to={`/course/${article.id}`} className="course-card-link">
+    <Link to={`/course/${course.id}`} className="course-card-link">
       <div className="course-card">
         {/* Превью изображение */}
         <div 
           className="course-preview"
-          style={{ background: getPreviewColor(article.id) }}
+          style={{ background: getPreviewColor(course.id) }}
         >
           <div className="course-preview-content">
             <div className="course-icon">📚</div>
@@ -49,21 +49,21 @@ const CourseCard = ({ article, progress = 0 }) => {
 
         {/* Контент карточки */}
         <div className="course-content">
-          <h3 className="course-title">{article.title}</h3>
+          <h3 className="course-title">{course.title}</h3>
           <p className="course-description">
-            Изучите основы и продвинутые техники. Получите практические навыки и знания.
+            {course.description || 'Изучите основы и продвинутые техники. Получите практические навыки и знания.'}
           </p>
 
           {/* Прогресс */}
           <div className="course-progress">
             <div className="progress-info">
-              <span className="progress-text">{progress}% завершено</span>
-              <span className="lessons-count">5 уроков</span>
+              <span className="progress-text">{course.progress}% завершено</span>
+              <span className="lessons-count">{course.total_lessons} уроков</span>
             </div>
             <div className="progress-bar">
               <div 
                 className="progress-fill" 
-                style={{ width: `${progress}%` }}
+                style={{ width: `${course.progress}%` }}
               ></div>
             </div>
           </div>
@@ -72,11 +72,11 @@ const CourseCard = ({ article, progress = 0 }) => {
           <div className="course-meta">
             <span className="course-difficulty">
               <span className="meta-icon">⭐</span>
-              Ранг {article.rank_required}
+              Ранг {course.rank_required}
             </span>
             <span className="course-duration">
-              <span className="meta-icon">🕒</span>
-              ~30 мин
+              <span className="meta-icon">📖</span>
+              {course.completed_lessons}/{course.total_lessons}
             </span>
           </div>
         </div>
@@ -86,7 +86,7 @@ const CourseCard = ({ article, progress = 0 }) => {
 };
 
 function Content() {
-  const [articles, setArticles] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -99,18 +99,26 @@ function Content() {
       }
 
       try {
-        const response = await fetch(`${BACKEND_URL}/api/content`, {
+        // ИЗМЕНЕНО: используем новый API /api/courses вместо /api/content
+        const response = await fetch(`${BACKEND_URL}/api/courses`, {
           headers: { 'X-Init-Data': tg.initData }
         });
         
         if (!response.ok) {
-          throw new Error('Не удалось загрузить контент');
+          if (response.status === 401) {
+            throw new Error('Ошибка авторизации. Перезапустите приложение.');
+          }
+          if (response.status === 403) {
+            throw new Error('Доступ запрещен. Убедитесь, что вы участник канала.');
+          }
+          throw new Error('Не удалось загрузить курсы');
         }
         
         const data = await response.json();
-        setArticles(data);
+        console.log('Loaded courses:', data); // Для отладки
+        setCourses(data);
       } catch (error) {
-        console.error("Ошибка при загрузке контента:", error);
+        console.error("Ошибка при загрузке курсов:", error);
         setError(error.message);
       } finally {
         setLoading(false);
@@ -141,6 +149,20 @@ function Content() {
         </div>
         <div className="error-state">
           <p>❌ {error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            style={{
+              padding: '10px 20px',
+              background: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              marginTop: '10px',
+              cursor: 'pointer'
+            }}
+          >
+            Попробовать снова
+          </button>
         </div>
       </div>
     );
@@ -155,13 +177,12 @@ function Content() {
         </p>
       </div>
 
-      {articles.length > 0 ? (
+      {courses.length > 0 ? (
         <div className="courses-grid">
-          {articles.map((article) => (
+          {courses.map((course) => (
             <CourseCard 
-              key={article.id} 
-              article={article}
-              progress={Math.floor(Math.random() * 101)} // Временно рандомный прогресс
+              key={course.id} 
+              course={course}
             />
           ))}
         </div>
