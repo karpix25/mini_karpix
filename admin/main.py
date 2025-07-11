@@ -389,16 +389,44 @@ def render_course_form(course=None, form_title="Новый курс"):
 async def root():
     return RedirectResponse(url="/admin/courses")
 
+@app.get("/admin")
+async def admin_root():
+    return RedirectResponse(url="/admin/courses")
+
 @app.get("/admin/courses", response_class=HTMLResponse)
 async def list_courses():
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM courses ORDER BY created_at DESC")
-    courses = cur.fetchall()
-    cur.close()
-    conn.close()
-    
-    return HTMLResponse(render_courses_list(courses))
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        
+        # Создаем таблицу courses если её нет
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS courses (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                cover_image_url TEXT,
+                access_type VARCHAR(20) DEFAULT 'level',
+                access_level INT DEFAULT 1,
+                access_days INT,
+                is_published BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            );
+        """)
+        
+        cur.execute("SELECT * FROM courses ORDER BY created_at DESC")
+        courses = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        return HTMLResponse(render_courses_list(courses))
+    except Exception as e:
+        return HTMLResponse(f"""
+        <h1>Ошибка: {str(e)}</h1>
+        <p>Проверьте что таблица courses создана в базе данных.</p>
+        <a href='/admin/lessons'>→ Старые уроки</a>
+        """)
 
 @app.get("/admin/courses/new", response_class=HTMLResponse)
 async def new_course():
