@@ -2,15 +2,15 @@ import os
 from fastapi import FastAPI
 from tortoise import Tortoise
 from fastapi_admin.app import app as admin_app
-from fastapi_admin.resources import Model as AdminResource
+from fastapi_admin.resources import Model
 from fastapi_admin.providers.login import UsernamePasswordProvider
-from tortoise.models import Model
+from tortoise.models import Model as TortoiseModel
 from tortoise import fields
 
-class Lesson(Model):
+class Lesson(TortoiseModel):
     id = fields.IntField(pk=True)
     course_id = fields.CharField(max_length=100)
-    section_id = fields.CharField(max_length=100)
+    section_id = fields.CharField(max_length=100) 
     lesson_slug = fields.CharField(max_length=100)
     title = fields.CharField(max_length=255)
     content = fields.TextField(null=True)
@@ -20,62 +20,39 @@ class Lesson(Model):
     
     class Meta:
         table = "lessons"
-    
-    def __str__(self): 
-        return self.title
 
-class AdminUser(Model):
+class AdminUser(TortoiseModel):
     id = fields.IntField(pk=True)
     username = fields.CharField(max_length=50, unique=True)
     password = fields.CharField(max_length=128)
     
     class Meta:
         table = "admins"
-    
-    def __str__(self): 
-        return self.username
 
 app = FastAPI()
 
 @app.on_event("startup")
 async def startup():
     DATABASE_URL = os.getenv("DATABASE_URL")
-    if not DATABASE_URL:
-        raise ValueError("DATABASE_URL environment variable is not set")
     
-    # Исправленная инициализация Tortoise
     await Tortoise.init(
         db_url=DATABASE_URL,
-        modules={"models": ["main"]}  # Изменено с "__main__" на "main"
+        modules={"models": ["main"]}
     )
     
-    # Генерируем схемы, если их нет
     await Tortoise.generate_schemas()
     
     login_provider = UsernamePasswordProvider(
-        login_logo_url="https://preview.tabler.io/static/logo.svg",
         admin_model=AdminUser,
     )
 
     await admin_app.configure(
-        logo_url="https://preview.tabler.io/static/logo-white.svg",
         providers=[login_provider],
         resources=[
-            AdminResource(  # Изменено с AdminModelResource на AdminResource
-                label="Урок", 
+            Model(
+                label="Уроки", 
                 model=Lesson, 
-                icon="fas fa-book",
-                fields=[
-                    "id", 
-                    "course_id", 
-                    "section_id", 
-                    "lesson_slug", 
-                    "title",
-                    "content",
-                    "sort_order", 
-                    "created_at", 
-                    "updated_at",
-                ]
+                fields=["id", "course_id", "section_id", "lesson_slug", "title", "content", "sort_order"]
             ),
         ]
     )
