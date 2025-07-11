@@ -1,18 +1,18 @@
 /* ===== ОСНОВНОЙ КОНТЕЙНЕР ===== */
 .course-overview-container {
-  background-color: var(--tg-theme-bg-color, #FFFFFF); /* Адаптивный фон */
+  background-color: var(--tg-theme-bg-color, #FFFFFF); 
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   padding: 0; 
-  color: var(--tg-theme-text-color, #1A1A1A); /* Адаптивный текст */
+  color: var(--tg-theme-text-color, #1A1A1A); 
   min-height: calc(100vh - var(--tg-theme-header-height, 56px) - var(--tg-theme-footer-height, 56px)); 
 }
 
 /* ===== ЗАГОЛОВОК КУРСА И ПРОГРЕСС-БАР (ПРОСТОЙ ВЕРХНИЙ ХЕДЕР) ===== */
 .course-simple-header {
-  background: var(--tg-theme-bg-color, #FFFFFF); /* Адаптивный фон */
-  padding: 20px; /* Общий отступ */
-  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); /* Тонкая разделительная линия */
-  text-align: left; /* Выравнивание по левому краю для всего хедера */
+  background: var(--tg-theme-bg-color, #FFFFFF); 
+  padding: 20px; 
+  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); 
+  text-align: left; 
 }
 
 .course-simple-title {
@@ -74,7 +74,7 @@
     cursor: pointer;
     border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); /* Разделитель */
     transition: background-color 0.2s ease;
-    text-align: left; /* Важно: выравнивание по левому краю */
+    /* text-align: left; - уже установлено на родителе, не нужно здесь */
 }
 .course-section-header:hover {
     background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); /* Легкий ховер */
@@ -82,7 +82,7 @@
 
 .section-info { /* Обертка для текста заголовка секции */
     flex-grow: 1; 
-    margin-left: 10px; /* Отступ текста от стрелки/иконки */
+    /* УБРАНО: margin-left: 10px; */ /* ЭТОТ МАРДЖИН УБИРАЕМ */
 }
 
 .course-section-title-text {
@@ -101,7 +101,7 @@
     align-items: center;
     justify-content: center;
     transition: transform 0.2s ease;
-    /* margin-right: 10px; */ /* Отступ от заголовка, если нужен */
+    margin-right: 10px; /* НОВОЕ: Отступ от заголовка */
 }
 
 .toggle-icon {
@@ -131,8 +131,8 @@
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  display: flex; 
-  align-items: baseline; 
+  display: flex; /* Для выравнивания номера и текста */
+  align-items: baseline; /* Выравнивание по базовой линии текста */
   text-align: left; 
 }
 
@@ -158,9 +158,10 @@
     flex-shrink: 0; 
     width: 30px; 
     text-align: left; /* Выравнивание номера по левому краю */
-    margin-right: 10px; /* Отступ от заголовка */
+    /* НОВОЕ: Уменьшаем или убираем margin-right, чтобы номер был ближе к левому краю */
+    margin-right: 5px; /* Уменьшаем отступ от заголовка, чтобы номер был ближе к левому краю */
     font-weight: 600; 
-    color: var(--tg-theme-text-color, #1A1A1A); /* Адаптивный цвет номера */
+    color: var(--tg-theme-text-color, #1A1A1A); 
 }
 
 .lesson-item-title {
