@@ -4,7 +4,7 @@ from tortoise import Tortoise
 # Мы импортируем модели из нашего основного файла админки
 from main import AdminUser 
 # Импортируем функцию для хеширования пароля, чтобы она была такой же, как при логине
-from fastapi_admin.auth import get_password_hash
+from fastapi_admin.providers.login import get_password_hash
 
 # Асинхронная функция для создания админа
 async def main():
