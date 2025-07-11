@@ -5,3 +5,4 @@ fastapi-admin
 python-jose[cryptography]
 passlib[bcrypt]
 tortoise-orm
+asyncpg # <-- ДОБАВЛЕНО
