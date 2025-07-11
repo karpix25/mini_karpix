@@ -2,8 +2,7 @@ import os
 from fastapi import FastAPI
 from tortoise import Tortoise
 from fastapi_admin.app import app as admin_app
-from fastapi_admin.resources import Model as AdminModelResource
-from fastapi_admin.widgets import inputs
+from fastapi_admin.resources import Model as AdminResource
 from fastapi_admin.providers.login import UsernamePasswordProvider
 from tortoise.models import Model
 from tortoise import fields
@@ -44,10 +43,14 @@ async def startup():
     if not DATABASE_URL:
         raise ValueError("DATABASE_URL environment variable is not set")
     
+    # Исправленная инициализация Tortoise
     await Tortoise.init(
         db_url=DATABASE_URL,
-        modules={"models": ["__main__"]}
+        modules={"models": ["main"]}  # Изменено с "__main__" на "main"
     )
+    
+    # Генерируем схемы, если их нет
+    await Tortoise.generate_schemas()
     
     login_provider = UsernamePasswordProvider(
         login_logo_url="https://preview.tabler.io/static/logo.svg",
@@ -58,7 +61,7 @@ async def startup():
         logo_url="https://preview.tabler.io/static/logo-white.svg",
         providers=[login_provider],
         resources=[
-            AdminModelResource(
+            AdminResource(  # Изменено с AdminModelResource на AdminResource
                 label="Урок", 
                 model=Lesson, 
                 icon="fas fa-book",
