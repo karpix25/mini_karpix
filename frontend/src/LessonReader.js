@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+// Если нужна подсветка синтаксиса, то потребуется дополнительная библиотека, например, react-syntax-highlighter
+// import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+// import { coldarkDark } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Пример темной темы для кода
 import './LessonReader.css';
 
 const tg = window.Telegram?.WebApp;
@@ -12,7 +15,7 @@ function LessonReader() {
   const navigate = useNavigate();
   
   const [lesson, setLesson] = useState(null);
-  const [course, setCourse] = useState(null);
+  const [course, setCourse] = useState(null); // Курс нужен для навигации по урокам
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -21,7 +24,7 @@ function LessonReader() {
   useEffect(() => {
     if (tg) {
       tg.BackButton.show();
-      const onBackClick = () => navigate(`/course/${courseId}`);
+      const onBackClick = () => navigate(`/course/${courseId}`); // Назад к обзору курса
       tg.BackButton.onClick(onBackClick);
       return () => tg.BackButton.offClick(onBackClick);
     }
@@ -37,43 +40,32 @@ function LessonReader() {
       }
 
       try {
-        // Загружаем данные курса для sidebar
-        const courseResponse = await fetch(`${BACKEND_URL}/api/courses/${courseId}`, {
-          headers: { 'X-Init-Data': tg.initData }
-        });
+        const headers = { 'X-Init-Data': tg.initData };
         
-        if (courseResponse.ok) {
-          const courseData = await courseResponse.json();
-          setCourse(courseData);
-          
-          // Проверяем завершен ли текущий урок
-          const currentLesson = courseData.sections
-            ?.flatMap(section => section.lessons)
-            ?.find(l => l.id === lessonId);
-          
-          if (currentLesson) {
-            setIsCompleted(currentLesson.completed || false);
-          }
-        }
-
+        // Загружаем данные курса (для навигации по урокам)
+        const courseResponse = await fetch(`${BACKEND_URL}/api/courses/${courseId}`, { headers });
+        if (!courseResponse.ok) throw new Error("Ошибка загрузки данных курса");
+        const courseData = await courseResponse.json();
+        setCourse(courseData);
+        
         // Загружаем содержимое урока
-        const lessonResponse = await fetch(`${BACKEND_URL}/api/courses/${courseId}/lessons/${lessonId}`, {
-          headers: { 'X-Init-Data': tg.initData }
-        });
-        
+        const lessonResponse = await fetch(`${BACKEND_URL}/api/courses/${courseId}/lessons/${lessonId}`, { headers });
         if (!lessonResponse.ok) {
-          if (lessonResponse.status === 404) {
-            throw new Error('Урок не найден');
-          }
-          if (lessonResponse.status === 403) {
-            throw new Error('Недостаточно прав для доступа к уроку');
-          }
+          if (lessonResponse.status === 404) { throw new Error('Урок не найден'); }
+          if (lessonResponse.status === 403) { throw new Error('Недостаточно прав для доступа к уроку'); }
           throw new Error('Не удалось загрузить урок');
         }
         
         const lessonData = await lessonResponse.json();
-        console.log('Loaded lesson:', lessonData);
         setLesson(lessonData);
+        
+        // Проверяем статус завершения урока
+        const currentLessonInCourse = courseData.sections
+          ?.flatMap(section => section.lessons)
+          ?.find(l => l.id === lessonId);
+        if (currentLessonInCourse) {
+          setIsCompleted(currentLessonInCourse.completed || false);
+        }
         
       } catch (error) {
         console.error('Ошибка загрузки урока:', error);
@@ -96,16 +88,19 @@ function LessonReader() {
       });
       
       if (response.ok) {
-        setIsCompleted(!isCompleted);
-        console.log(`Урок ${lessonId} отмечен как завершенный`);
+        setIsCompleted(!isCompleted); // Переключаем статус
+        console.log(`Урок ${lessonId} отмечен как завершенный/незавершенный`);
+        // Опционально: оповестить Telegram Haptic Feedback
+        if (tg) tg.HapticFeedback.impactOccurred('light');
+      } else {
+        const errorData = await response.json();
+        console.error('Ошибка при отметке урока:', errorData);
+        alert(`Не удалось обновить статус: ${errorData.detail || 'Ошибка сети'}`);
       }
     } catch (error) {
       console.error('Ошибка при отметке урока:', error);
+      alert(`Не удалось обновить статус: ${error.message}`);
     }
-  };
-
-  const goBackToCourse = () => {
-    navigate(`/course/${courseId}`);
   };
 
   // Найти все уроки для навигации
@@ -117,11 +112,12 @@ function LessonReader() {
       section.lessons.forEach(lessonItem => {
         allLessons.push({
           ...lessonItem,
-          sectionId: section.id,
-          sectionTitle: section.title
+          sectionId: section.id, // Добавляем sectionId для полной навигации
         });
       });
     });
+    // Сортировка, если уроки не гарантированно приходят отсортированными
+    allLessons.sort((a, b) => a.sort_order - b.sort_order);
     return allLessons;
   };
 
@@ -132,126 +128,117 @@ function LessonReader() {
 
   if (loading) {
     return (
-      <div className="lesson-reader-container">
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Загружается урок...</p>
-        </div>
+      <div className="lesson-reader-container common-loading-error-state">
+        <div className="loading-spinner"></div>
+        <p>Загружается урок...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="lesson-reader-container">
-        <div className="error-state">
-          <h2>Ошибка загрузки</h2>
-          <p>{error}</p>
-          <button onClick={goBackToCourse} className="back-button">
-            ← Вернуться к курсу
-          </button>
-        </div>
+      <div className="lesson-reader-container common-loading-error-state">
+        <h2>Ошибка загрузки</h2>
+        <p>{error}</p>
+        <button onClick={() => navigate(`/course/${courseId}`)} className="back-button">
+          ← Вернуться к курсу
+        </button>
       </div>
     );
   }
 
   if (!lesson || !course) {
     return (
-      <div className="lesson-reader-container">
-        <div className="error-state">
-          <h2>Урок не найден</h2>
-          <button onClick={goBackToCourse} className="back-button">
-            ← Вернуться к курсу
-          </button>
-        </div>
+      <div className="lesson-reader-container common-loading-error-state">
+        <h2>Урок не найден</h2>
+        <button onClick={() => navigate(`/course/${courseId}`)} className="back-button">
+          ← Вернуться к курсу
+        </button>
       </div>
     );
   }
 
+  // Для рендеринга ReactMarkdown с подсветкой синтаксиса (если решили добавить)
+  // const components = {
+  //   code({node, inline, className, children, ...props}) {
+  //     const match = /language-(\w+)/.exec(className || '')
+  //     return !inline && match ? (
+  //       <SyntaxHighlighter
+  //         style={coldarkDark} // Используйте подходящую тему
+  //         language={match[1]}
+  //         PreTag="div"
+  //         {...props}
+  //       >
+  //         {String(children).replace(/\n$/, '')}
+  //       </SyntaxHighlighter>
+  //     ) : (
+  //       <code className={className} {...props}>
+  //         {children}
+  //       </code>
+  //     )
+  //   }
+  // }
+
   return (
     <div className="lesson-reader-container">
-      {/* Левый sidebar */}
-      <div className="lesson-sidebar">
-        <div className="sidebar-header">
-          <h3 className="course-name">{course.title}</h3>
-        </div>
-        
-        <div className="sidebar-content">
-          {course.sections?.map((section) => (
-            <div key={section.id} className="sidebar-section">
-              <div className="sidebar-section-header">
-                <span className="section-title">{section.title}</span>
-              </div>
-              <div className="sidebar-lessons">
-                {section.lessons.map((lessonItem) => (
-                  <div 
-                    key={lessonItem.id}
-                    className={`sidebar-lesson ${lessonItem.id === lessonId ? 'active' : ''}`}
-                    onClick={() => navigate(`/course/${courseId}/lesson/${lessonItem.id}`)}
-                  >
-                    <span className="lesson-icon">
-                      {lessonItem.completed ? '✅' : '📄'}
-                    </span>
-                    <span className="lesson-title">{lessonItem.title}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Основной контент */}
-      <div className="lesson-main-content">
-        {/* Мобильная навигация */}
-        <div className="mobile-navigation">
-          <button className="back-to-course" onClick={goBackToCourse}>
-            ← Menu
-          </button>
-        </div>
-
-        {/* Заголовок урока */}
-        <div className="lesson-header">
-          <h1 className="lesson-title">{lesson.title}</h1>
-          <button 
+      {/* Верхний хедер с заголовком урока и кнопками навигации */}
+      <div className="lesson-top-header">
+        <button className="nav-text-button" onClick={() => navigate(`/course/${courseId}`)}>
+          ← Menu
+        </button>
+        <h1 className="lesson-top-title">{lesson.title}</h1>
+        <button className="nav-text-button" onClick={() => nextLesson && navigate(`/course/${courseId}/lesson/${nextLesson.id}`)} disabled={!nextLesson}>
+          Next →
+        </button>
+        {/* Кнопка завершения урока может быть здесь, или внизу, или отдельно */}
+        {/* <button 
             className={`complete-button ${isCompleted ? 'completed' : ''}`}
             onClick={handleMarkComplete}
+            title={isCompleted ? "Урок завершен" : "Отметить как завершенный"}
           >
             {isCompleted ? (
               <div className="completion-check">✓</div>
             ) : (
               <div className="completion-circle"></div>
             )}
-          </button>
-        </div>
+        </button> */}
+      </div>
 
-        {/* Markdown контент */}
-        <div className="lesson-content">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {lesson.content || '# Урок\n\nСодержимое урока загружается...'}
-          </ReactMarkdown>
-        </div>
+      {/* Основной контент урока */}
+      <div className="lesson-main-content-wrapper"> {/* Обертка для основного контента и паддингов */}
+        <ReactMarkdown remarkPlugins={[remarkGfm]} /* components={components} */>
+          {lesson.content || '# Урок\n\nСодержимое урока загружается...'}
+        </ReactMarkdown>
+      </div>
 
-        {/* Навигация между уроками */}
-        <div className="lesson-navigation">
+      {/* Нижняя навигация между уроками */}
+      <div className="lesson-bottom-navigation">
           {prevLesson && (
             <button 
-              className="nav-button prev"
+              className="bottom-nav-button"
               onClick={() => navigate(`/course/${courseId}/lesson/${prevLesson.id}`)}
             >
-              ← Previous
+              ← Previous Lesson
             </button>
           )}
           
+          {/* Кнопка "Mark Complete" внизу, рядом с навигацией, если удобно */}
+          <button 
+              className={`bottom-complete-button ${isCompleted ? 'completed' : ''}`}
+              onClick={handleMarkComplete}
+              title={isCompleted ? "Урок завершен" : "Отметить как завершенный"}
+            >
+              {isCompleted ? "Завершено ✓" : "Отметить как завершенный"}
+          </button>
+
           {nextLesson && (
             <button 
-              className="nav-button next"
+              className="bottom-nav-button"
               onClick={() => navigate(`/course/${courseId}/lesson/${nextLesson.id}`)}
             >
-              Next →
+              Next Lesson →
             </button>
           )}
-        </div>
       </div>
     </div>
   );
