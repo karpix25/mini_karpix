@@ -12,31 +12,10 @@ function LessonReader() {
   const navigate = useNavigate();
   
   const [lesson, setLesson] = useState(null);
+  const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isCompleted, setIsCompleted] = useState(false);
-
-  // Моковые данные курса
-  const mockCourse = {
-    title: "Введение в разработку",
-    sections: [
-      {
-        id: "introduction",
-        title: "🚀 Introduction",
-        lessons: [
-          { id: "welcome", title: "Welcome!", completed: false },
-          { id: "setup", title: "Project Setup", completed: false }
-        ]
-      },
-      {
-        id: "basics", 
-        title: "📚 Basics",
-        lessons: [
-          { id: "html", title: "HTML Basics", completed: false },
-          { id: "css", title: "CSS Introduction", completed: false }
-        ]
-      }
-    ]
-  };
 
   // Настройка Telegram BackButton
   useEffect(() => {
@@ -48,58 +27,81 @@ function LessonReader() {
     }
   }, [navigate, courseId]);
 
-  // Загрузка данных урока
+  // Загрузка данных урока и курса
   useEffect(() => {
-    const fetchLesson = async () => {
+    const fetchData = async () => {
+      if (!tg?.initData) {
+        setError("Приложение должно быть открыто в Telegram.");
+        setLoading(false);
+        return;
+      }
+
       try {
-        if (tg?.initData) {
-          const response = await fetch(`${BACKEND_URL}/api/courses/${courseId}/lessons/${lessonId}`, {
-            headers: { 'X-Init-Data': tg.initData }
-          });
+        // Загружаем данные курса для sidebar
+        const courseResponse = await fetch(`${BACKEND_URL}/api/courses/${courseId}`, {
+          headers: { 'X-Init-Data': tg.initData }
+        });
+        
+        if (courseResponse.ok) {
+          const courseData = await courseResponse.json();
+          setCourse(courseData);
           
-          if (response.ok) {
-            const lessonData = await response.json();
-            setLesson(lessonData);
-          } else {
+          // Проверяем завершен ли текущий урок
+          const currentLesson = courseData.sections
+            ?.flatMap(section => section.lessons)
+            ?.find(l => l.id === lessonId);
+          
+          if (currentLesson) {
+            setIsCompleted(currentLesson.completed || false);
+          }
+        }
+
+        // Загружаем содержимое урока
+        const lessonResponse = await fetch(`${BACKEND_URL}/api/courses/${courseId}/lessons/${lessonId}`, {
+          headers: { 'X-Init-Data': tg.initData }
+        });
+        
+        if (!lessonResponse.ok) {
+          if (lessonResponse.status === 404) {
             throw new Error('Урок не найден');
           }
-        } else {
-          // Моковые данные
-          setLesson({
-            id: lessonId,
-            title: "Добро пожаловать в курс!",
-            content: `# Добро пожаловать!
-
-Это урок "${lessonId}" из курса "${courseId}".
-
-## Содержание урока
-
-- Основы веб-разработки
-- Практические навыки
-- Современные технологии
-
-## Следующие шаги
-
-1. Изучите материал
-2. Выполните задания
-3. Переходите дальше
-
-Удачи в обучении! 🚀`
-          });
+          if (lessonResponse.status === 403) {
+            throw new Error('Недостаточно прав для доступа к уроку');
+          }
+          throw new Error('Не удалось загрузить урок');
         }
+        
+        const lessonData = await lessonResponse.json();
+        console.log('Loaded lesson:', lessonData);
+        setLesson(lessonData);
+        
       } catch (error) {
         console.error('Ошибка загрузки урока:', error);
+        setError(error.message);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchLesson();
+    fetchData();
   }, [courseId, lessonId]);
 
-  const handleMarkComplete = () => {
-    setIsCompleted(!isCompleted);
-    console.log(`Урок ${lessonId} отмечен как завершенный`);
+  const handleMarkComplete = async () => {
+    if (!tg?.initData) return;
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/courses/${courseId}/lessons/${lessonId}/complete`, {
+        method: 'POST',
+        headers: { 'X-Init-Data': tg.initData }
+      });
+      
+      if (response.ok) {
+        setIsCompleted(!isCompleted);
+        console.log(`Урок ${lessonId} отмечен как завершенный`);
+      }
+    } catch (error) {
+      console.error('Ошибка при отметке урока:', error);
+    }
   };
 
   const goBackToCourse = () => {
@@ -108,10 +110,16 @@ function LessonReader() {
 
   // Найти все уроки для навигации
   const getAllLessons = () => {
+    if (!course?.sections) return [];
+    
     const allLessons = [];
-    mockCourse.sections.forEach(section => {
+    course.sections.forEach(section => {
       section.lessons.forEach(lessonItem => {
-        allLessons.push(lessonItem);
+        allLessons.push({
+          ...lessonItem,
+          sectionId: section.id,
+          sectionTitle: section.title
+        });
       });
     });
     return allLessons;
@@ -133,7 +141,21 @@ function LessonReader() {
     );
   }
 
-  if (!lesson) {
+  if (error) {
+    return (
+      <div className="lesson-reader-container">
+        <div className="error-state">
+          <h2>Ошибка загрузки</h2>
+          <p>{error}</p>
+          <button onClick={goBackToCourse} className="back-button">
+            ← Вернуться к курсу
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!lesson || !course) {
     return (
       <div className="lesson-reader-container">
         <div className="error-state">
@@ -151,11 +173,11 @@ function LessonReader() {
       {/* Левый sidebar */}
       <div className="lesson-sidebar">
         <div className="sidebar-header">
-          <h3 className="course-name">{mockCourse.title}</h3>
+          <h3 className="course-name">{course.title}</h3>
         </div>
         
         <div className="sidebar-content">
-          {mockCourse.sections.map((section) => (
+          {course.sections?.map((section) => (
             <div key={section.id} className="sidebar-section">
               <div className="sidebar-section-header">
                 <span className="section-title">{section.title}</span>
@@ -206,7 +228,7 @@ function LessonReader() {
         {/* Markdown контент */}
         <div className="lesson-content">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {lesson.content}
+            {lesson.content || '# Урок\n\nСодержимое урока загружается...'}
           </ReactMarkdown>
         </div>
 
