@@ -2,7 +2,8 @@ import os
 from fastapi import FastAPI
 from tortoise import Tortoise
 from fastapi_admin.app import app as admin_app
-from fastapi_admin.resources import Model as ModelResource, Field
+# !!! ИЗМЕНЕН ИМПОРТ: ModelResource теперь не класс, а функция
+from fastapi_admin.resources import Link, Model as AdminModelResource # Меняем название импорта, чтобы не путать
 from fastapi_admin.widgets import inputs
 from fastapi_admin.providers.login import UsernamePasswordProvider
 from tortoise.models import Model
@@ -54,11 +55,14 @@ async def startup():
     await admin_app.configure(
         logo_url="https://preview.tabler.io/static/logo-white.svg",
         providers=[login_provider],
-        # Добавляем раздел "Уроки" в меню админки
         resources=[
-            ModelResource(
-                label="Урок", model=Lesson, icon="fas fa-book",
+            # !!! ИЗМЕНЕНИЕ ЗДЕСЬ: используем AdminModelResource вместо ModelResource !!!
+            AdminModelResource(
+                label="Урок", # Название в меню
+                model=Lesson, # Модель, с которой работает ресурс
+                icon="fas fa-book", # Иконка
                 fields=[
+                    # Определяем поля для отображения и редактирования
                     "id", "course_id", "section_id", "lesson_slug", "title",
                     Field(name="content", label="Содержимое (Markdown)", input_=inputs.TextArea()),
                     "sort_order", "created_at", "updated_at",
@@ -67,11 +71,10 @@ async def startup():
         ]
     )
 
-# !!! ИЗМЕНЕНИЕ ЗДЕСЬ: МОНТИРУЕМ АДМИНКУ В КОРЕНЬ !!!
+# Монтируем админку в корень
 app.mount('/', admin_app)
 
-# Теперь эндпоинт @app.get("/") становится лишним, так как / будет обслуживаться админкой.
-# Можно его удалить или оставить, он просто не будет доступен.
+# @app.get("/") теперь не нужен, так как его путь будет обслуживаться админкой.
 # @app.get("/")
 # async def root():
 #     return {"message": "Это сервис админки. Сама админка доступна по /admin"}
