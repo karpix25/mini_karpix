@@ -386,7 +386,7 @@ LESSON_FORM_TEMPLATE = """
     <meta charset="utf-8">
     <style>
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
             margin: 0; padding: 20px; background: #f8f9fa; 
         }
         .container { max-width: 1000px; margin: 0 auto; }
