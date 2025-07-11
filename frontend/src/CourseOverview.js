@@ -46,7 +46,7 @@ function CourseOverview() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
-  const [loading, setLoading] = useState(true); // <-- ИСПРАВЛЕНО ЗДЕСЬ!
+  const [loading, setLoading] = useState(true); // <-- ИСПРАВЛЕНИЕ: здесь был удален useState() в прошлой итерации
   const [error, setError] = useState(null);
   const [userRankLevel, setUserRankLevel] = useState(1); 
 
@@ -169,4 +169,4 @@ function CourseOverview() {
   );
 }
 
-export default CourseOverview;```
+export default CourseOverview;
