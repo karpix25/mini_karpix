@@ -12,6 +12,7 @@ const LessonListItem = ({ lesson, isUnlocked, onLessonClick }) => {
       className={`lesson-list-item ${!isUnlocked ? 'locked' : ''} ${lesson.completed ? 'completed' : ''}`}
       onClick={() => isUnlocked && onLessonClick(lesson.id)}
     >
+      {/* lesson.sort_order - это номер урока */}
       <span className="lesson-item-number">{lesson.sort_order}.</span> {/* Явная нумерация урока */}
       <span className="lesson-item-title">{lesson.title}</span>
       {/* Иконки состояния (замок/галочка) можно добавить здесь, если нужны */}
@@ -19,25 +20,42 @@ const LessonListItem = ({ lesson, isUnlocked, onLessonClick }) => {
   );
 };
 
-// Компонент секции курса (если секции нужны для группировки уроков)
-const CourseSection = ({ section, onLessonClick, userRankLevel }) => {
+// Компонент секции курса (теперь с возможностью переключения)
+const CourseSection = ({ section, onLessonClick, userRankLevel, isInitiallyExpanded = false }) => {
+  const [isExpanded, setIsExpanded] = useState(isInitiallyExpanded);
+
+  const handleToggle = () => {
+    setIsExpanded(prev => !prev);
+    if (tg) tg.HapticFeedback.impactOccurred('light'); // Тактильный отклик
+  };
+
   const isSectionUnlocked = true; // Пока всегда true, если курс доступен
   
   return (
     <div className="course-section-group">
-      {/* Заголовок секции - если он нужен для разделения, но менее заметный */}
-      {section.title && <h3 className="course-section-title">{section.title}</h3>}
+      <div className="course-section-header" onClick={handleToggle}>
+        <div className="section-info">
+          {/* Убрано "Секция" - теперь только название секции */}
+          {section.title && <span className="course-section-title-text">{section.title}</span>}
+        </div>
+        <div className="section-controls">
+          {/* Иконка переключения (шеврон) */}
+          <span className={`toggle-arrow ${isExpanded ? 'expanded' : ''}`}>▼</span>
+        </div>
+      </div>
       
-      <ol className="section-lessons-list">
-        {section.lessons.map((lesson) => (
-          <LessonListItem 
-            key={lesson.id}
-            lesson={lesson}
-            isUnlocked={isSectionUnlocked && (lesson.rank_required <= userRankLevel)} 
-            onLessonClick={onLessonClick}
-          />
-        ))}
-      </ol>
+      {isExpanded && (
+        <ol className="section-lessons-list">
+          {section.lessons.map((lesson) => (
+            <LessonListItem 
+              key={lesson.id}
+              lesson={lesson}
+              isUnlocked={isSectionUnlocked && (lesson.rank_required <= userRankLevel)} 
+              onLessonClick={onLessonClick}
+            />
+          ))}
+        </ol>
+      )}
     </div>
   );
 };
@@ -46,7 +64,7 @@ function CourseOverview() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
-  const [loading, setLoading] = useState(true); // <-- ИСПРАВЛЕНИЕ: здесь был удален useState() в прошлой итерации
+  const [loading, setLoading] = useState(true); 
   const [error, setError] = useState(null);
   const [userRankLevel, setUserRankLevel] = useState(1); 
 
@@ -156,12 +174,13 @@ function CourseOverview() {
 
       {/* Список секций/уроков */}
       <div className="course-sections-list-wrapper">
-        {course.sections?.map((section) => (
+        {course.sections?.map((section, index) => (
           <CourseSection
             key={section.id}
             section={section}
             onLessonClick={handleLessonClick}
             userRankLevel={userRankLevel} 
+            isInitiallyExpanded={index === 0} // Разворачиваем первую секцию по умолчанию
           />
         ))}
       </div>
