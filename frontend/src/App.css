@@ -25,6 +25,8 @@ body {
   /* Убрали padding отсюда, так как он будет специфичен для каждого компонента */
   overflow-y: auto; /* Позволяет прокручивать контент, если он не влезает */
   -webkit-overflow-scrolling: touch; /* Для более плавного скролла на iOS */
+  /* НОВОЕ: Отступ снизу, чтобы контент не перекрывался фиксированной навигацией */
+  padding-bottom: 70px; /* Высота вашей навигации + немного отступа */
 }
 
 /* Нижняя навигационная панель */
@@ -36,6 +38,14 @@ body {
   border-top: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); /* Светлый разделитель */
   flex-shrink: 0; /* Навигация не будет сжиматься */
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05); /* Легкая тень сверху */
+
+  /* НОВОЕ: Фиксируем внизу */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 1000; /* Убедимся, что навигация поверх всего */
 }
 
 .nav-tab {
@@ -57,5 +67,3 @@ body {
   color: var(--tg-theme-link-color, #007BFF); /* Ярко-синий для активной вкладки */
   border-bottom-color: var(--tg-theme-link-color, #007BFF); /* Синяя линия под активной вкладкой */
 }
-
-/* УБРАНЫ СТИЛИ .leaderboard-list и .leaderboard-item отсюда, они должны быть в Leaderboard.css */
