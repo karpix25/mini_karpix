@@ -2,9 +2,7 @@ import os
 from fastapi import FastAPI
 from tortoise import Tortoise
 from fastapi_admin.app import app as admin_app
-# Исправленный импорт - Field может быть в другом модуле
 from fastapi_admin.resources import Model as AdminModelResource
-from fastapi_admin.models import AbstractAdminLog
 from fastapi_admin.widgets import inputs
 from fastapi_admin.providers.login import UsernamePasswordProvider
 from tortoise.models import Model
@@ -38,10 +36,6 @@ class AdminUser(Model):
     def __str__(self): 
         return self.username
 
-# Модель для логов администратора (может потребоваться для fastapi-admin)
-class AdminLog(AbstractAdminLog):
-    pass
-
 app = FastAPI()
 
 @app.on_event("startup")
@@ -68,18 +62,14 @@ async def startup():
                 label="Урок", 
                 model=Lesson, 
                 icon="fas fa-book",
+                # Упрощенный список полей без кастомизации
                 fields=[
                     "id", 
                     "course_id", 
                     "section_id", 
                     "lesson_slug", 
                     "title",
-                    # Используем прямое указание виджета без Field
-                    {
-                        "name": "content",
-                        "label": "Содержимое (Markdown)",
-                        "input_": inputs.TextArea()
-                    },
+                    "content",  # Простое текстовое поле
                     "sort_order", 
                     "created_at", 
                     "updated_at",
