@@ -12,7 +12,7 @@ const LessonListItem = ({ lesson, isUnlocked, onLessonClick }) => {
       className={`lesson-list-item ${!isUnlocked ? 'locked' : ''} ${lesson.completed ? 'completed' : ''}`}
       onClick={() => isUnlocked && onLessonClick(lesson.id)}
     >
-      <span className="lesson-item-number">{lesson.sort_order}.</span> {/* Явная нумерация урока */}
+      <span className="lesson-item-number">{lesson.sort_order}</span> {/* Явная нумерация урока, БЕЗ ТОЧКИ */}
       <span className="lesson-item-title">{lesson.title}</span>
     </li>
   );
@@ -24,7 +24,7 @@ const CourseSection = ({ section, onLessonClick, userRankLevel, isInitiallyExpan
 
   const handleToggle = () => {
     setIsExpanded(prev => !prev);
-    if (tg) tg.HapticFeedback.impactOccurred('light'); // Тактильный отклик
+    if (tg) tg.HapticFeedback.impactOccurred('light'); 
   };
 
   const isSectionUnlocked = true; 
@@ -32,12 +32,15 @@ const CourseSection = ({ section, onLessonClick, userRankLevel, isInitiallyExpan
   return (
     <div className="course-section-group">
       <div className="course-section-header" onClick={handleToggle}>
-        {/* ПЕРЕМЕСТИЛИ ИКОНКУ ПЕРЕКЛЮЧЕНИЯ В НАЧАЛО */}
-        <span className={`toggle-arrow ${isExpanded ? 'expanded' : ''}`}>▲</span> {/* Изменил на ▲, как на скриншоте */}
+        {/* ИКОНКА ПЕРЕКЛЮЧЕНИЯ В НАЧАЛЕ */}
+        {/* Используем Font Awesome иконку, если она подключена в проекте, или SVG */}
+        <div className={`toggle-icon-wrapper ${isExpanded ? 'expanded' : ''}`}>
+             <svg className="toggle-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+        
         <div className="section-info">
           {section.title && <span className="course-section-title-text">{section.title.replace(/^Секция\s*/, '')}</span>}
         </div>
-        {/* УБРАЛИ section-controls, если там больше ничего нет */}
       </div>
       
       {isExpanded && (
