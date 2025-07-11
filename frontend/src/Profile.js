@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
-import 'react-circular-progressbar/dist/styles.css'; // <-- ИСПРАВЛЕНО // Убедитесь, что этот CSS импортирован
-import './Profile.css'; // Обновленный CSS для Profile и Leaderboard
+import 'react-circular-progressbar/dist/styles.css'; 
+import './Profile.css'; 
 
 const tg = window.Telegram?.WebApp;
 const BACKEND_URL = "https://miniback.karpix.com";
@@ -9,6 +9,7 @@ const BACKEND_URL = "https://miniback.karpix.com";
 // Новый вспомогательный компонент для отображения места и медали (из Leaderboard.js)
 const RankDisplay = ({ rank }) => {
     let medal = null;
+    // Используем эмодзи из скриншота, но можем заменить на иконки позже
     if (rank === 1) medal = '🥇';
     if (rank === 2) medal = '🥈';
     if (rank === 3) medal = '🥉';
@@ -23,9 +24,9 @@ const RankDisplay = ({ rank }) => {
 
 // Новый вспомогательный компонент для одной строки пользователя в лидерборде (из Leaderboard.js)
 const LeaderboardUserRow = ({ user, period }) => {
-    const scoreFormatted = period !== 'all' && user.score > 0 ? `+${user.score}` : user.score;
+    // В зависимости от скриншота, очки для "Все время" теперь не имеют знака "+"
+    const scoreFormatted = (period === 'all' && user.score >= 0) ? user.score : (user.score > 0 ? `+${user.score}` : user.score);
     const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username || 'User';
-    // Используем initials для заглушки, как в Leaderboard.js
     const initials = fullName.split(' ').map(word => word[0]).join('').substring(0, 2).toUpperCase();
     const avatarUrl = user.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=4A90E2&color=fff&size=40&font-size=0.5`;
 
@@ -35,7 +36,7 @@ const LeaderboardUserRow = ({ user, period }) => {
             <img 
                 src={avatarUrl} 
                 alt={fullName} 
-                className="leaderboard-avatar" // Используем новый класс, чтобы не конфликтовать с аватаром профиля
+                className="leaderboard-avatar"
                 onError={(e) => {
                     e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=6c757d&color=fff&size=40&font-size=0.5`;
                 }}
@@ -50,8 +51,11 @@ const LeaderboardUserRow = ({ user, period }) => {
 function Profile() {
   const [userData, setUserData] = useState(null);
   const [allRanks, setAllRanks] = useState([]);
-  const [leaderboardData, setLeaderboardData] = useState({ top_users: [], current_user: null });
-  const [leaderboardPeriod, setLeaderboardPeriod] = useState('7d'); // Период для лидерборда
+  // Теперь храним данные для всех трех периодов
+  const [leaderboardData7d, setLeaderboardData7d] = useState({ top_users: [], current_user: null });
+  const [leaderboardData30d, setLeaderboardData30d] = useState({ top_users: [], current_user: null });
+  const [leaderboardDataAll, setLeaderboardDataAll] = useState({ top_users: [], current_user: null });
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -68,7 +72,7 @@ function Profile() {
       try {
         const headers = { 'X-Init-Data': tg.initData };
         
-        // Запрашиваем данные профиля и всех рангов
+        // Загружаем данные профиля и всех рангов
         const [userRes, ranksRes] = await Promise.all([
           fetch(`${BACKEND_URL}/api/me`, { headers }),
           fetch(`${BACKEND_URL}/api/ranks`, { headers })
@@ -83,14 +87,20 @@ function Profile() {
         setUserData(userDataFetched);
         setAllRanks(ranksDataFetched);
 
-        // Загружаем данные лидерборда
-        const leaderboardResponse = await fetch(`${BACKEND_URL}/api/leaderboard?period=${leaderboardPeriod}`, { headers });
-        if (!leaderboardResponse.ok) {
-            const errorData = await leaderboardResponse.json();
-            throw new Error(errorData.detail || "Ошибка загрузки лидерборда");
-        }
-        const leaderboardDataFetched = await leaderboardResponse.json();
-        setLeaderboardData(leaderboardDataFetched);
+        // Загружаем данные лидерборда для всех трех периодов
+        const [lb7dRes, lb30dRes, lbAllRes] = await Promise.all([
+            fetch(`${BACKEND_URL}/api/leaderboard?period=7d`, { headers }),
+            fetch(`${BACKEND_URL}/api/leaderboard?period=30d`, { headers }),
+            fetch(`${BACKEND_URL}/api/leaderboard?period=all`, { headers })
+        ]);
+
+        if (!lb7dRes.ok) throw new Error("Ошибка загрузки лидерборда (7 дней)");
+        if (!lb30dRes.ok) throw new Error("Ошибка загрузки лидерборда (30 дней)");
+        if (!lbAllRes.ok) throw new Error("Ошибка загрузки лидерборда (все время)");
+
+        setLeaderboardData7d(await lb7dRes.json());
+        setLeaderboardData30d(await lb30dRes.json());
+        setLeaderboardDataAll(await lbAllRes.json());
 
       } catch (err) {
         console.error("Ошибка загрузки данных:", err);
@@ -100,7 +110,7 @@ function Profile() {
       }
     };
     fetchData();
-  }, [leaderboardPeriod]); // Перезагружаем данные при смене периода лидерборда
+  }, []); // Пустой массив зависимостей, чтобы запрос выполнялся только один раз при монтировании
 
   if (loading) return <div className="profile-container common-loading-error-state">Загрузка...</div>;
   if (error) return <div className="profile-container common-loading-error-state"><strong>Ошибка:</strong><p>{error}</p></div>;
@@ -110,62 +120,90 @@ function Profile() {
   const initials = fullName.split(' ').map(word => word[0]).join('').substring(0, 2).toUpperCase();
   const profileAvatarUrl = tg.initDataUnsafe?.user?.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=4A90E2&color=fff&size=150&font-size=0.5`;
 
-  // Лидерборд: отображаем только топ-10
-  const top10Users = leaderboardData.top_users.slice(0, 10);
-  const currentUserLeaderboardData = leaderboardData.current_user ? (top10Users.find(u => leaderboardData.current_user && u.user_id === leaderboardData.current_user.user_id) || leaderboardData.current_user) : null;
+  // Вспомогательная функция для рендеринга секции лидерборда
+  const renderLeaderboardSection = (title, data, period) => {
+    const top10Users = data.top_users.slice(0, 10);
+    const currentUserForDisplay = data.current_user ? (top10Users.find(u => data.current_user && u.user_id === data.current_user.user_id) || data.current_user) : null;
+    
+    return (
+        <div className="profile-card leaderboard-section">
+            <h3 className="card-title leaderboard-title">{title}</h3>
+            {top10Users.length > 0 ? (
+                <div className="leaderboard-list">
+                    {top10Users.map(user => (
+                        <LeaderboardUserRow key={user.user_id} user={user} period={period} />
+                    ))}
+                </div>
+            ) : (
+                <div className="no-leaders-message">Лидеры пока не определены. Будь первым!</div>
+            )}
+
+            {/* Карточка "Your rank", если текущий пользователь не в топ-10, и он есть */}
+            {currentUserForDisplay && !top10Users.some(u => u.user_id === currentUserForDisplay.user_id) && (
+                <div className="leaderboard-your-rank-card">
+                    <h3 className="leaderboard-your-rank-title">Ваш ранг</h3>
+                    <LeaderboardUserRow user={currentUserForDisplay} period={period} />
+                </div>
+            )}
+        </div>
+    );
+  };
 
   return (
     <div className="profile-container">
       {/* Профиль пользователя */}
-      <div className="profile-card">
+      <div className="profile-card profile-main-card"> {/* Добавлен класс для стилизации основной карточки профиля */}
         <div className="profile-header">
           <div className="progress-container">
             <CircularProgressbar
               value={userData.progress_percentage || 0}
-              text={`${userData.level || userData.rank}`} // Показываем уровень или ранг
+              text={`${userData.level || userData.rank}`} 
               strokeWidth={5}
               styles={buildStyles({
-                textColor: '#1A1A1A', // Темный текст
-                pathColor: '#61dafb', // Акцентный цвет
-                trailColor: '#E9ECEF', // Светлый трек
+                textColor: '#1A1A1A', 
+                pathColor: '#61dafb', 
+                trailColor: '#E9ECEF', 
                 textSize: '28px',
-                backgroundColor: 'white', // Фон внутри круга
+                backgroundColor: 'white', 
               })}
             />
             <img 
               src={profileAvatarUrl} 
               alt="avatar" 
-              className="profile-avatar" // Отдельный класс для аватара профиля
+              className="profile-avatar" 
               onError={(e) => {
                 e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=6c757d&color=fff&size=150&font-size=0.5`;
               }}
             />
-             {/* Значок ранга на аватаре, как на скриншоте */}
             <div className="profile-rank-badge">
-                {userData.rank_level}
+                {userData.level} {/* Используем level, как на скриншоте */}
             </div>
           </div>
           <h2 className="profile-name">{fullName}</h2>
           <p className="profile-rank-name">
               Level {userData.level} - {userData.rank} 
-              {/* Если на скриншоте есть иконка - ее сюда */}
-              <span className="rank-icon-text"> 🛠️</span>
+              {/* Используем иконку из скриншота */}
+              <span className="rank-icon-text">🛠️</span>
           </p>
           {userData.points_to_next_rank !== null ? (
-              <p className="profile-points-to-go">{userData.points_to_next_rank} points to level up <span className="help-icon">?</span></p>
+              <p className="profile-points-to-go">
+                {userData.points_to_next_rank} points to level up 
+                <span className="help-icon">?</span>
+            </p>
           ) : (
               <p className="profile-points-to-go">Максимальный уровень!</p>
           )}
         </div>
       </div>
 
-      {/* Список всех рангов */}
+      {/* Секция "Все уровни" как отдельная карточка */}
       <div className="profile-card ranks-list-card">
         <h3 className="card-title">Все уровни</h3>
         <div className="ranks-list">
             {allRanks.map(rank => (
             <div key={rank.level} className={`rank-item ${rank.is_unlocked ? 'unlocked' : 'locked'}`}>
                 <div className="rank-item-icon">
+                {/* Используем иконки из скриншота */}
                 {rank.is_unlocked ? '✅' : '🔒'}
                 </div>
                 <div className="rank-item-info">
@@ -177,35 +215,10 @@ function Profile() {
         </div>
       </div>
 
-      {/* Секция Лидерборда */}
-      <div className="profile-card leaderboard-section">
-        <div className="leaderboard-header">
-            <h3 className="card-title">Leaderboard ({leaderboardPeriod === '7d' ? '7-day' : leaderboardPeriod === '30d' ? '30-day' : 'All-time'})</h3>
-            <div className="period-selector">
-                <button onClick={() => setLeaderboardPeriod('7d')} className={leaderboardPeriod === '7d' ? 'active' : ''}>7-day</button>
-                <button onClick={() => setLeaderboardPeriod('30d')} className={leaderboardPeriod === '30d' ? 'active' : ''}>30-day</button>
-                <button onClick={() => setLeaderboardPeriod('all')} className={leaderboardPeriod === 'all' ? 'active' : ''}>All-time</button>
-            </div>
-        </div>
-
-        {top10Users.length > 0 ? (
-            <div className="leaderboard-list">
-                {top10Users.map(user => (
-                    <LeaderboardUserRow key={user.user_id} user={user} period={leaderboardPeriod} />
-                ))}
-            </div>
-        ) : (
-            <div className="no-leaders-message">Лидеры пока не определены. Будь первым!</div>
-        )}
-
-        {/* Карточка "Your rank", если текущий пользователь не в топ-10 */}
-        {currentUserLeaderboardData && !top10Users.some(u => u.user_id === currentUserLeaderboardData.user_id) && (
-             <div className="leaderboard-your-rank-card">
-                <h3 className="leaderboard-your-rank-title">Your rank</h3>
-                <LeaderboardUserRow user={currentUserLeaderboardData} period={leaderboardPeriod} />
-            </div>
-        )}
-      </div>
+      {/* Секции Лидерборда (каждая в отдельной карточке) */}
+      {renderLeaderboardSection("Leaderboard (7-day)", leaderboardData7d, '7d')}
+      {renderLeaderboardSection("Leaderboard (30-day)", leaderboardData30d, '30d')}
+      {renderLeaderboardSection("Leaderboard (All-time)", leaderboardDataAll, 'all')}
     </div>
   );
 }
