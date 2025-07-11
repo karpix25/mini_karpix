@@ -12,9 +12,7 @@ import hashlib
 
 app = FastAPI(title="Админ-панель Уроков")
 
-# Простая HTML-админка
-# В admin/main.py обновите HTML_TEMPLATE (добавьте колонки):
-
+# Обновленный HTML_TEMPLATE с новыми колонками
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -57,22 +55,7 @@ HTML_TEMPLATE = """
                 </tr>
             </thead>
             <tbody>
-                {% for lesson in lessons %}
-                <tr>
-                    <td>{{ lesson.id }}</td>
-                    <td>{{ lesson.course_id }}</td>
-                    <td>{{ lesson.section_id }}</td>
-                    <td>{{ lesson.lesson_slug }}</td>
-                    <td>{{ lesson.title }}</td>
-                    <td>{{ lesson.rank_required or 1 }}</td>
-                    <td class="content-preview">{{ lesson.preview_text or '' }}</td>
-                    <td>{{ lesson.sort_order }}</td>
-                    <td>
-                        <a href="/admin/lessons/{{ lesson.id }}/edit" class="btn">Редактировать</a>
-                        <a href="/admin/lessons/{{ lesson.id }}/delete" class="btn btn-danger" onclick="return confirm('Удалить урок?')">Удалить</a>
-                    </td>
-                </tr>
-                {% endfor %}
+                {lessons_rows}
             </tbody>
         </table>
     </div>
@@ -80,8 +63,7 @@ HTML_TEMPLATE = """
 </html>
 """
 
-# Обновите EDIT_TEMPLATE (добавьте новые поля):
-
+# Обновленный EDIT_TEMPLATE с новыми полями
 EDIT_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -104,17 +86,17 @@ EDIT_TEMPLATE = """
 </head>
 <body>
     <div class="container">
-        <h1>{{ "Редактировать" if lesson else "Добавить" }} урок</h1>
+        <h1>{edit_title} урок</h1>
         <form method="post">
             <div class="form-row">
                 <div class="form-group">
                     <label>Курс ID:</label>
-                    <input type="text" name="course_id" value="{{ lesson.course_id if lesson else '' }}" required 
+                    <input type="text" name="course_id" value="{course_id}" required 
                            placeholder="Например: welcome, javascript, python">
                 </div>
                 <div class="form-group">
                     <label>Секция ID:</label>
-                    <input type="text" name="section_id" value="{{ lesson.section_id if lesson else '' }}" required
+                    <input type="text" name="section_id" value="{section_id}" required
                            placeholder="Например: introduction, basics, advanced">
                 </div>
             </div>
@@ -122,30 +104,30 @@ EDIT_TEMPLATE = """
             <div class="form-row">
                 <div class="form-group">
                     <label>Урок (slug):</label>
-                    <input type="text" name="lesson_slug" value="{{ lesson.lesson_slug if lesson else '' }}" required
+                    <input type="text" name="lesson_slug" value="{lesson_slug}" required
                            placeholder="Например: getting-started, variables, functions">
                 </div>
                 <div class="form-group">
                     <label>Требуемый ранг:</label>
                     <select name="rank_required" required>
-                        <option value="1" {{ 'selected' if lesson and lesson.rank_required == 1 else '' }}>1 - Новичок</option>
-                        <option value="2" {{ 'selected' if lesson and lesson.rank_required == 2 else '' }}>2 - Активный участник</option>
-                        <option value="3" {{ 'selected' if lesson and lesson.rank_required == 3 else '' }}>3 - Ветеран</option>
-                        <option value="4" {{ 'selected' if lesson and lesson.rank_required == 4 else '' }}>4 - Легенда</option>
+                        <option value="1" {rank1_selected}>1 - Новичок</option>
+                        <option value="2" {rank2_selected}>2 - Активный участник</option>
+                        <option value="3" {rank3_selected}>3 - Ветеран</option>
+                        <option value="4" {rank4_selected}>4 - Легенда</option>
                     </select>
                 </div>
             </div>
             
             <div class="form-group">
                 <label>Заголовок:</label>
-                <input type="text" name="title" value="{{ lesson.title if lesson else '' }}" required
+                <input type="text" name="title" value="{title}" required
                        placeholder="Название урока">
             </div>
             
             <div class="form-group">
                 <label>Превью (краткое описание):</label>
                 <textarea name="preview_text" class="preview-text" 
-                          placeholder="Краткое описание урока, которое увидят пользователи">{{ lesson.preview_text if lesson else '' }}</textarea>
+                          placeholder="Краткое описание урока, которое увидят пользователи">{preview_text}</textarea>
             </div>
             
             <div class="form-group">
@@ -167,12 +149,12 @@ console.log('Hello, World!');
 
 ## Заключение
 
-Подведение итогов...">{{ lesson.content if lesson else '' }}</textarea>
+Подведение итогов...">{content}</textarea>
             </div>
             
             <div class="form-group">
                 <label>Порядок сортировки:</label>
-                <input type="number" name="sort_order" value="{{ lesson.sort_order if lesson else '0' }}"
+                <input type="number" name="sort_order" value="{sort_order}"
                        placeholder="0, 1, 2, 3... (порядок отображения)">
             </div>
             
@@ -203,9 +185,7 @@ LOGIN_TEMPLATE = """
 <body>
     <div class="login-form">
         <h2>Вход в админ-панель</h2>
-        {% if error %}
-        <div class="error">{{ error }}</div>
-        {% endif %}
+        {error_block}
         <form method="post">
             <div class="form-group">
                 <label>Логин:</label>
@@ -216,58 +196,6 @@ LOGIN_TEMPLATE = """
                 <input type="password" name="password" required>
             </div>
             <button type="submit" class="btn">Войти</button>
-        </form>
-    </div>
-</body>
-</html>
-"""
-
-EDIT_TEMPLATE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Редактировать урок</title>
-    <meta charset="utf-8">
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .form-group { margin: 10px 0; }
-        .form-group label { display: block; margin-bottom: 5px; }
-        .form-group input, .form-group textarea { width: 100%; padding: 8px; }
-        .btn { padding: 8px 16px; margin: 4px; text-decoration: none; background: #007bff; color: white; border: none; cursor: pointer; }
-        textarea { height: 300px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>{{ "Редактировать" if lesson else "Добавить" }} урок</h1>
-        <form method="post">
-            <div class="form-group">
-                <label>Курс ID:</label>
-                <input type="text" name="course_id" value="{{ lesson.course_id if lesson else '' }}" required>
-            </div>
-            <div class="form-group">
-                <label>Секция ID:</label>
-                <input type="text" name="section_id" value="{{ lesson.section_id if lesson else '' }}" required>
-            </div>
-            <div class="form-group">
-                <label>Урок (slug):</label>
-                <input type="text" name="lesson_slug" value="{{ lesson.lesson_slug if lesson else '' }}" required>
-            </div>
-            <div class="form-group">
-                <label>Заголовок:</label>
-                <input type="text" name="title" value="{{ lesson.title if lesson else '' }}" required>
-            </div>
-            <div class="form-group">
-                <label>Содержимое (Markdown):</label>
-                <textarea name="content">{{ lesson.content if lesson else '' }}</textarea>
-            </div>
-            <div class="form-group">
-                <label>Порядок сортировки:</label>
-                <input type="number" name="sort_order" value="{{ lesson.sort_order if lesson else '0' }}">
-            </div>
-            <button type="submit" class="btn">Сохранить</button>
-            <a href="/admin/lessons" class="btn">Отмена</a>
         </form>
     </div>
 </body>
@@ -304,40 +232,45 @@ def check_admin_auth(username: str, password: str) -> bool:
     return False
 
 def render_template(template: str, **context):
-    """Простой рендер шаблонов"""
-    for key, value in context.items():
-        template = template.replace(f"{{{{ {key} }}}}", str(value) if value is not None else "")
-    
-    # Обработка циклов {% for %}
-    if "{% for lesson in lessons %}" in template and "lessons" in context:
+    """Улучшенный рендер шаблонов"""
+    # Обработка списка уроков
+    if "lessons_rows" in template and "lessons" in context:
         lessons_html = ""
         for lesson in context["lessons"]:
-            lesson_row = """
+            rank_required = lesson.get('rank_required') or 1
+            preview_text = lesson.get('preview_text') or ''
+            preview_short = preview_text[:50] + '...' if len(preview_text) > 50 else preview_text
+            
+            lesson_row = f"""
                 <tr>
-                    <td>{id}</td>
-                    <td>{course_id}</td>
-                    <td>{section_id}</td>
-                    <td>{lesson_slug}</td>
-                    <td>{title}</td>
-                    <td>{sort_order}</td>
+                    <td>{lesson['id']}</td>
+                    <td>{lesson['course_id']}</td>
+                    <td>{lesson['section_id']}</td>
+                    <td>{lesson['lesson_slug']}</td>
+                    <td>{lesson['title']}</td>
+                    <td>{rank_required}</td>
+                    <td class="content-preview">{preview_short}</td>
+                    <td>{lesson['sort_order']}</td>
                     <td>
-                        <a href="/admin/lessons/{id}/edit" class="btn">Редактировать</a>
-                        <a href="/admin/lessons/{id}/delete" class="btn btn-danger" onclick="return confirm('Удалить урок?')">Удалить</a>
+                        <a href="/admin/lessons/{lesson['id']}/edit" class="btn">Редактировать</a>
+                        <a href="/admin/lessons/{lesson['id']}/delete" class="btn btn-danger" onclick="return confirm('Удалить урок?')">Удалить</a>
                     </td>
                 </tr>
-            """.format(**lesson)
+            """
             lessons_html += lesson_row
         
-        template = template.replace(
-            "{% for lesson in lessons %}\n                <tr>\n                    <td>{{ lesson.id }}</td>\n                    <td>{{ lesson.course_id }}</td>\n                    <td>{{ lesson.section_id }}</td>\n                    <td>{{ lesson.lesson_slug }}</td>\n                    <td>{{ lesson.title }}</td>\n                    <td>{{ lesson.sort_order }}</td>\n                    <td>\n                        <a href=\"/admin/lessons/{{ lesson.id }}/edit\" class=\"btn\">Редактировать</a>\n                        <a href=\"/admin/lessons/{{ lesson.id }}/delete\" class=\"btn btn-danger\" onclick=\"return confirm('Удалить урок?')\">Удалить</a>\n                    </td>\n                </tr>\n                {% endfor %}",
-            lessons_html
-        )
+        template = template.replace("{lessons_rows}", lessons_html)
+    
+    # Обработка остальных переменных
+    for key, value in context.items():
+        if key != "lessons":
+            template = template.replace(f"{{{key}}}", str(value) if value is not None else "")
     
     return template
 
 @app.get("/admin/login", response_class=HTMLResponse)
 async def login_page():
-    return render_template(LOGIN_TEMPLATE, error="")
+    return HTMLResponse(render_template(LOGIN_TEMPLATE, error_block=""))
 
 @app.post("/admin/login")
 async def login(username: str = Form(...), password: str = Form(...)):
@@ -346,7 +279,8 @@ async def login(username: str = Form(...), password: str = Form(...)):
         response.set_cookie("admin_session", "authenticated")  # Простая сессия
         return response
     else:
-        return HTMLResponse(render_template(LOGIN_TEMPLATE, error="Неверный логин или пароль"))
+        error_html = '<div class="error">Неверный логин или пароль</div>'
+        return HTMLResponse(render_template(LOGIN_TEMPLATE, error_block=error_html))
 
 @app.get("/admin/lessons", response_class=HTMLResponse)
 async def list_lessons():
@@ -361,7 +295,20 @@ async def list_lessons():
 
 @app.get("/admin/lessons/new", response_class=HTMLResponse)
 async def new_lesson():
-    return HTMLResponse(render_template(EDIT_TEMPLATE, lesson=None))
+    return HTMLResponse(render_template(EDIT_TEMPLATE, 
+        edit_title="Добавить",
+        course_id="",
+        section_id="",
+        lesson_slug="",
+        title="",
+        preview_text="",
+        content="",
+        sort_order="0",
+        rank1_selected="selected",
+        rank2_selected="",
+        rank3_selected="",
+        rank4_selected=""
+    ))
 
 @app.post("/admin/lessons/new")
 async def create_lesson(
@@ -370,15 +317,17 @@ async def create_lesson(
     lesson_slug: str = Form(...),
     title: str = Form(...),
     content: str = Form(...),
+    preview_text: str = Form(""),
+    rank_required: int = Form(1),
     sort_order: int = Form(0)
 ):
     conn = get_db()
     cur = conn.cursor()
     
     cur.execute("""
-        INSERT INTO lessons (course_id, section_id, lesson_slug, title, content, sort_order)
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """, (course_id, section_id, lesson_slug, title, content, sort_order))
+        INSERT INTO lessons (course_id, section_id, lesson_slug, title, content, preview_text, rank_required, sort_order)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """, (course_id, section_id, lesson_slug, title, content, preview_text, rank_required, sort_order))
     
     conn.commit()
     cur.close()
@@ -398,7 +347,22 @@ async def edit_lesson(lesson_id: int):
     if not lesson:
         raise HTTPException(status_code=404, detail="Урок не найден")
     
-    return HTMLResponse(render_template(EDIT_TEMPLATE, lesson=lesson))
+    rank_required = lesson.get('rank_required') or 1
+    
+    return HTMLResponse(render_template(EDIT_TEMPLATE,
+        edit_title="Редактировать",
+        course_id=lesson['course_id'],
+        section_id=lesson['section_id'],
+        lesson_slug=lesson['lesson_slug'],
+        title=lesson['title'],
+        preview_text=lesson.get('preview_text') or '',
+        content=lesson.get('content') or '',
+        sort_order=lesson['sort_order'],
+        rank1_selected="selected" if rank_required == 1 else "",
+        rank2_selected="selected" if rank_required == 2 else "",
+        rank3_selected="selected" if rank_required == 3 else "",
+        rank4_selected="selected" if rank_required == 4 else ""
+    ))
 
 @app.post("/admin/lessons/{lesson_id}/edit")
 async def update_lesson(
@@ -408,6 +372,8 @@ async def update_lesson(
     lesson_slug: str = Form(...),
     title: str = Form(...),
     content: str = Form(...),
+    preview_text: str = Form(""),
+    rank_required: int = Form(1),
     sort_order: int = Form(0)
 ):
     conn = get_db()
@@ -415,9 +381,10 @@ async def update_lesson(
     
     cur.execute("""
         UPDATE lessons 
-        SET course_id=%s, section_id=%s, lesson_slug=%s, title=%s, content=%s, sort_order=%s, updated_at=NOW()
+        SET course_id=%s, section_id=%s, lesson_slug=%s, title=%s, content=%s, 
+            preview_text=%s, rank_required=%s, sort_order=%s, updated_at=NOW()
         WHERE id=%s
-    """, (course_id, section_id, lesson_slug, title, content, sort_order, lesson_id))
+    """, (course_id, section_id, lesson_slug, title, content, preview_text, rank_required, sort_order, lesson_id))
     
     conn.commit()
     cur.close()
