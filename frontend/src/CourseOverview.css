@@ -17,7 +17,7 @@
 }
 
 .course-simple-title {
-  margin: 0 0 16px 0; /* Увеличили отступ от прогресс-бара */
+  margin: 0 0 16px 0; /* Отступ от прогресс-бара */
   font-size: 24px;
   font-weight: 700;
   color: var(--tg-theme-text-color, #1A1A1A); /* Адаптивный текст */
@@ -61,20 +61,66 @@
   padding: 0 20px; /* Отступы по бокам, как на скриншоте */
 }
 
-.course-section-title { /* Заголовок секции, если есть */
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--tg-theme-text-color, #1A1A1A);
-  margin: 20px 0 10px 0; 
-  text-align: left; 
+/* Обертка для каждой секции (без фона) */
+.course-section-group {
+    /* Никаких фонов или границ, просто контейнер */
 }
 
+/* Заголовок секции с возможностью переключения */
+.course-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0; /* Отступы для хедера секции */
+    cursor: pointer;
+    border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); /* Разделитель */
+    transition: background-color 0.2s ease;
+}
+.course-section-header:hover {
+    background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); /* Легкий ховер */
+}
+
+.course-section-title-text {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--tg-theme-text-color, #1A1A1A);
+    margin: 0; /* Убираем дефолтные марджины */
+    text-align: left; /* Выравнивание по левому краю */
+}
+
+.section-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Отступ между элементами управления */
+}
+
+.toggle-arrow {
+    font-size: 14px; /* Размер стрелки */
+    color: var(--tg-theme-hint-color, #6C757D);
+    transition: transform 0.2s ease;
+}
+.toggle-arrow.expanded {
+    transform: rotate(180deg); /* Поворот при раскрытии */
+}
+
+/* Стиль для списка уроков внутри секции */
 .section-lessons-list { 
-  list-style: none; /* Убираем дефолтные стили списка */
+  list-style: none; /* Убираем дефолтные маркеры */
   padding-left: 0; 
   margin: 0;
-  /* counter-reset: lesson-counter; */ /* УБРАНО: CSS-счетчики */
+  /* Уроки внутри разворачивающейся секции также имеют границу сверху, 
+     чтобы отделить их от заголовка секции или предыдущей секции, 
+     если секция не первая в списке и не имеет заголовка.
+     Этот border-top будет дублироваться с border-bottom у course-section-header
+     для первого урока, но это можно скорректировать с помощью first-child */
+  border-top: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); 
 }
+
+/* Скрываем верхний border у первого урока в секции, если у секции есть заголовок */
+.section-lessons-list .lesson-list-item:first-child {
+    border-top: none; 
+}
+
 
 .lesson-list-item { /* Стиль для <li> */
   padding: 12px 0; 
@@ -86,7 +132,7 @@
   transition: background-color 0.2s ease;
   display: flex; 
   align-items: baseline; 
-  text-align: left; /* Выравнивание всего элемента по левому краю */
+  text-align: left; 
 }
 
 .lesson-list-item:last-child {
@@ -107,14 +153,13 @@
   color: var(--tg-theme-hint-color, #6C757D); 
 }
 
-/* Стилизация номера урока (Явный номер в JSX) */
 .lesson-item-number {
     flex-shrink: 0; 
-    width: 30px; /* Фиксированная ширина для номера */
-    text-align: right; /* Выравнивание номера */
-    margin-right: 10px; /* Отступ от заголовка */
+    width: 30px; 
+    text-align: left; /* ВЫРАВНИВАНИЕ ПО ЛЕВОМУ КРАЮ */
+    margin-right: 10px; 
     font-weight: 600; 
-    color: var(--tg-theme-text-color, #1A1A1A); /* Адаптивный цвет номера */
+    color: var(--tg-theme-text-color, #1A1A1A); 
 }
 
 .lesson-item-title {
@@ -122,7 +167,6 @@
 }
 
 /* ===== ОБЩИЕ СОСТОЯНИЯ ЗАГРУЗКИ И ОШИБКИ ===== */
-/* (без изменений, т.к. они уже адаптивны) */
 .common-loading-error-state {
     display: flex;
     flex-direction: column;
@@ -195,4 +239,21 @@
     width: 25px; /* Чуть меньше на мобильных */
     margin-right: 8px;
   }
+}
+
+/* Анимация slideDown для раскрывающихся секций */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px; /* Достаточно большое значение */
+    overflow: visible;
+  }
+}
+.section-lessons-list {
+    animation: slideDown 0.3s ease-out;
 }
