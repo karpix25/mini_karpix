@@ -13,7 +13,7 @@ const LessonListItem = ({ lesson, isUnlocked, onLessonClick }) => {
       onClick={() => isUnlocked && onLessonClick(lesson.id)}
     >
       {/* lesson.sort_order - это номер урока */}
-      <span className="lesson-item-number">{lesson.sort_order}.</span> {/* Явная нумерация урока */}
+      <span className="lesson-item-number">{lesson.sort_order}</span> {/* Явная нумерация урока, БЕЗ ТОЧКИ ЗДЕСЬ */}
       <span className="lesson-item-title">{lesson.title}</span>
       {/* Иконки состояния (замок/галочка) можно добавить здесь, если нужны */}
     </li>
@@ -35,12 +35,12 @@ const CourseSection = ({ section, onLessonClick, userRankLevel, isInitiallyExpan
     <div className="course-section-group">
       <div className="course-section-header" onClick={handleToggle}>
         <div className="section-info">
-          {/* Убрано "Секция" - теперь только название секции */}
-          {section.title && <span className="course-section-title-text">{section.title}</span>}
+          {/* ИСПОЛЬЗУЕМ section.title, УБРАВ ВОЗМОЖНЫЙ ПРЕФИКС "Секция " */}
+          {section.title && <span className="course-section-title-text">{section.title.replace(/^Секция\s*/, '')}</span>}
         </div>
         <div className="section-controls">
           {/* Иконка переключения (шеврон) */}
-          <span className={`toggle-arrow ${isExpanded ? 'expanded' : ''}`}>▼</span>
+          <span className={`toggle-arrow ${isExpanded ? 'expanded' : ''}`}>▲</span> {/* Изменил на ▲, как на скриншоте */}
         </div>
       </div>
       
