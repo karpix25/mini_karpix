@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
-import 'react-circularbar-progressbar/dist/styles.css'; // Убедитесь, что этот CSS импортирован
+import 'react-circular-progressbar/dist/styles.css'; // <-- ИСПРАВЛЕНО // Убедитесь, что этот CSS импортирован
 import './Profile.css'; // Обновленный CSS для Profile и Leaderboard
 
 const tg = window.Telegram?.WebApp;
