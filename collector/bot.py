@@ -37,7 +37,23 @@ def setup_database():
         );
     """)
     
-    # 2. Создание таблицы сообщений
+    # 2. НОВАЯ ТАБЛИЦА: Метаданные курсов
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS courses (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            description TEXT,
+            cover_image_url TEXT,
+            access_type VARCHAR(20) DEFAULT 'level',
+            access_level INT DEFAULT 1,
+            access_days INT,
+            is_published BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+    """)
+    
+    # 3. Создание таблицы сообщений
     cur.execute("""
         CREATE TABLE IF NOT EXISTS messages (
             id SERIAL PRIMARY KEY,
@@ -48,7 +64,7 @@ def setup_database():
         );
     """)
     
-    # 3. Создание таблицы прогресса по урокам (ОНА ССЫЛАЕТСЯ НА ПЕРВУЮ)
+    # 4. Создание таблицы прогресса по урокам (ОНА ССЫЛАЕТСЯ НА ПЕРВУЮ)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS user_lesson_progress (
             user_id BIGINT NOT NULL,
@@ -60,25 +76,28 @@ def setup_database():
         );
     """)
 
-    # 4. Создание ОБНОВЛЕННОЙ таблицы для хранения уроков (для админки)
+    # 5. Создание ОБНОВЛЕННОЙ таблицы для хранения уроков/страниц
     cur.execute("""
         CREATE TABLE IF NOT EXISTS lessons (
             id SERIAL PRIMARY KEY,
             course_id VARCHAR(100) NOT NULL,
+            course_ref_id INT REFERENCES courses(id) ON DELETE CASCADE,
             section_id VARCHAR(100) NOT NULL,
             lesson_slug VARCHAR(100) NOT NULL,
             title VARCHAR(255) NOT NULL,
             content TEXT,
+            rich_content TEXT,
             sort_order INT DEFAULT 0,
             rank_required INT DEFAULT 1,
             preview_text TEXT,
+            is_published BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMPTZ DEFAULT NOW(),
             updated_at TIMESTAMPTZ DEFAULT NOW(),
             UNIQUE (course_id, lesson_slug)
         );
     """)
     
-    # 5. НОВАЯ ТАБЛИЦА: Создание таблицы администраторов (для админки)
+    # 6. НОВАЯ ТАБЛИЦА: Создание таблицы администраторов (для админки)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS admins (
             id SERIAL PRIMARY KEY,
@@ -87,24 +106,45 @@ def setup_database():
         );
     """)
     
-    # 6. Создаем индекс для ускорения выборок по дате
+    # 7. Создаем индекс для ускорения выборок по дате
     cur.execute("""
         CREATE INDEX IF NOT EXISTS idx_messages_date_user_id ON messages (message_date, user_id);
     """)
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS idx_lessons_course_ref_id ON lessons (course_ref_id);
+    """)
     
-    # 7. Добавляем недостающие колонки в существующую таблицу (если они еще не добавлены)
+    # 8. Добавляем недостающие колонки в существующие таблицы
     try:
+        # Колонки для channel_subscribers
         cur.execute("ALTER TABLE channel_subscribers ADD COLUMN IF NOT EXISTS last_name VARCHAR(255);")
         cur.execute("ALTER TABLE channel_subscribers ADD COLUMN IF NOT EXISTS photo_url VARCHAR(500);")
         cur.execute("ALTER TABLE channel_subscribers ADD COLUMN IF NOT EXISTS language_code VARCHAR(10);")
         cur.execute("ALTER TABLE channel_subscribers ADD COLUMN IF NOT EXISTS is_bot BOOLEAN DEFAULT FALSE;")
         cur.execute("ALTER TABLE channel_subscribers ADD COLUMN IF NOT EXISTS last_seen TIMESTAMPTZ DEFAULT NOW();")
         
-        # 8. НОВЫЕ КОЛОНКИ для таблицы lessons
+        # НОВЫЕ КОЛОНКИ для таблицы lessons
         cur.execute("ALTER TABLE lessons ADD COLUMN IF NOT EXISTS rank_required INT DEFAULT 1;")
         cur.execute("ALTER TABLE lessons ADD COLUMN IF NOT EXISTS preview_text TEXT;")
+        cur.execute("ALTER TABLE lessons ADD COLUMN IF NOT EXISTS course_ref_id INT;")
+        cur.execute("ALTER TABLE lessons ADD COLUMN IF NOT EXISTS rich_content TEXT;")
+        cur.execute("ALTER TABLE lessons ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT TRUE;")
         
-        logging.info("Database schema updated successfully")
+        # Добавляем внешний ключ если его еще нет
+        cur.execute("""
+            DO $$ 
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.table_constraints 
+                    WHERE constraint_name = 'lessons_course_ref_id_fkey'
+                ) THEN
+                    ALTER TABLE lessons ADD CONSTRAINT lessons_course_ref_id_fkey 
+                    FOREIGN KEY (course_ref_id) REFERENCES courses(id) ON DELETE CASCADE;
+                END IF;
+            END $$;
+        """)
+        
+        logging.info("Database schema updated successfully with courses table")
     except Exception as e:
         logging.warning(f"Error adding columns (they might already exist): {e}")
         
