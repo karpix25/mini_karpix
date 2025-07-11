@@ -6,7 +6,7 @@ const tg = window.Telegram?.WebApp;
 const BACKEND_URL = "https://miniback.karpix.com";
 
 // Компонент раздела с toggle
-const CourseSection = ({ section, isExpanded, onToggle, onLessonClick, userPoints }) => {
+const CourseSection = ({ section, isExpanded, onToggle, onLessonClick, userRankLevel }) => {
   return (
     <div className="course-section">
       <div 
@@ -26,7 +26,7 @@ const CourseSection = ({ section, isExpanded, onToggle, onLessonClick, userPoint
       {isExpanded && (
         <div className="section-lessons">
           {section.lessons.map((lesson, index) => {
-            const isUnlocked = userPoints >= (lesson.points || 0);
+            const isUnlocked = true; // Все уроки в курсе доступны если курс доступен
             return (
               <div 
                 key={lesson.id}
@@ -39,9 +39,7 @@ const CourseSection = ({ section, isExpanded, onToggle, onLessonClick, userPoint
                   </span>
                   <span className="lesson-title">{lesson.title}</span>
                 </div>
-                {lesson.duration && (
-                  <span className="lesson-duration">{lesson.duration}</span>
-                )}
+                <span className="lesson-duration">5 мин</span>
               </div>
             );
           })}
@@ -56,7 +54,8 @@ function CourseOverview() {
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [userPoints, setUserPoints] = useState(0);
+  const [error, setError] = useState(null);
+  const [userRankLevel, setUserRankLevel] = useState(1);
   const [expandedSections, setExpandedSections] = useState({});
 
   // Настройка Telegram BackButton
@@ -72,75 +71,53 @@ function CourseOverview() {
   // Загрузка данных курса
   useEffect(() => {
     const fetchCourseData = async () => {
+      if (!tg?.initData) {
+        setError("Приложение должно быть открыто в Telegram.");
+        setLoading(false);
+        return;
+      }
+
       try {
-        // Загружаем данные пользователя для проверки доступа
-        if (tg?.initData) {
-          const userResponse = await fetch(`${BACKEND_URL}/api/me`, {
-            headers: { 'X-Init-Data': tg.initData }
-          });
-          if (userResponse.ok) {
-            const userData = await userResponse.json();
-            setUserPoints(userData.points || 0);
-          }
+        // Загружаем данные пользователя
+        const userResponse = await fetch(`${BACKEND_URL}/api/me`, {
+          headers: { 'X-Init-Data': tg.initData }
+        });
+        
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          const points = userData.points || 0;
+          // Простая логика определения ранга: каждые 50 очков = +1 ранг
+          const rankLevel = Math.floor(points / 50) + 1;
+          setUserRankLevel(Math.min(rankLevel, 4)); // Макс ранг 4
         }
 
-        // Загружаем данные курса
-        if (tg?.initData) {
-          const courseResponse = await fetch(`${BACKEND_URL}/api/courses/${courseId}`, {
-            headers: { 'X-Init-Data': tg.initData }
-          });
-          
-          if (courseResponse.ok) {
-            const courseData = await courseResponse.json();
-            setCourse(courseData);
-            
-            // Разворачиваем первый раздел по умолчанию
-            if (courseData.sections?.length > 0) {
-              setExpandedSections({ [courseData.sections[0].id]: true });
-            }
+        // Загружаем данные конкретного курса
+        const courseResponse = await fetch(`${BACKEND_URL}/api/courses/${courseId}`, {
+          headers: { 'X-Init-Data': tg.initData }
+        });
+        
+        if (!courseResponse.ok) {
+          if (courseResponse.status === 404) {
+            throw new Error('Курс не найден');
           }
-        } else {
-          // Моковые данные для разработки
-          const mockCourse = {
-            id: courseId,
-            title: "Введение в разработку",
-            description: "Изучите основы веб-разработки от А до Я",
-            sections: [
-              {
-                id: "introduction",
-                title: "🚀 Introduction",
-                icon: "🚀",
-                lessons: [
-                  { id: "welcome", title: "Welcome!", points: 0, duration: "5 мин", completed: false },
-                  { id: "setup", title: "Project Setup", points: 10, duration: "10 мин", completed: false }
-                ]
-              },
-              {
-                id: "basics",
-                title: "📚 Beginner's Guide",
-                icon: "📚",
-                lessons: [
-                  { id: "html-basics", title: "HTML Basics", points: 20, duration: "15 мин", completed: false },
-                  { id: "css-intro", title: "CSS Introduction", points: 40, duration: "20 мин", completed: false }
-                ]
-              },
-              {
-                id: "advanced",
-                title: "⚡ Advanced Topics",
-                icon: "⚡",
-                lessons: [
-                  { id: "javascript", title: "JavaScript Fundamentals", points: 80, duration: "30 мин", completed: false },
-                  { id: "frameworks", title: "Modern Frameworks", points: 150, duration: "45 мин", completed: false }
-                ]
-              }
-            ]
-          };
-          setCourse(mockCourse);
-          setExpandedSections({ "introduction": true });
-          setUserPoints(50); // Моковые очки
+          if (courseResponse.status === 403) {
+            throw new Error('Недостаточно прав для доступа к курсу');
+          }
+          throw new Error('Не удалось загрузить курс');
         }
+        
+        const courseData = await courseResponse.json();
+        console.log('Loaded course data:', courseData);
+        setCourse(courseData);
+        
+        // Разворачиваем первый раздел по умолчанию
+        if (courseData.sections?.length > 0) {
+          setExpandedSections({ [courseData.sections[0].id]: true });
+        }
+        
       } catch (error) {
         console.error('Ошибка загрузки курса:', error);
+        setError(error.message);
       } finally {
         setLoading(false);
       }
@@ -175,6 +152,20 @@ function CourseOverview() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="course-overview-container">
+        <div className="error-state">
+          <h2>Ошибка загрузки</h2>
+          <p>{error}</p>
+          <button onClick={goBackToContent} className="back-button">
+            ← Вернуться к курсам
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!course) {
     return (
       <div className="course-overview-container">
@@ -192,7 +183,7 @@ function CourseOverview() {
   const completedLessons = course.sections?.reduce((acc, section) => 
     acc + section.lessons.filter(lesson => lesson.completed).length, 0
   ) || 0;
-  const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+  const progressPercentage = course.progress || 0;
 
   return (
     <div className="course-overview-container">
@@ -228,8 +219,8 @@ function CourseOverview() {
               {totalLessons} уроков
             </span>
             <span className="meta-item">
-              <span className="meta-icon">⚡</span>
-              {userPoints} очков
+              <span className="meta-icon">⭐</span>
+              Ранг {course.rank_required}
             </span>
           </div>
         </div>
@@ -244,7 +235,7 @@ function CourseOverview() {
             isExpanded={expandedSections[section.id]}
             onToggle={() => handleSectionToggle(section.id)}
             onLessonClick={handleLessonClick}
-            userPoints={userPoints}
+            userRankLevel={userRankLevel}
           />
         ))}
       </div>
@@ -252,7 +243,7 @@ function CourseOverview() {
       {/* Информация о доступе */}
       <div className="access-info">
         <p className="access-text">
-          💡 Зарабатывайте очки в канале, чтобы разблокировать новые уроки
+          💡 Зарабатывайте очки в канале, чтобы разблокировать новые курсы
         </p>
       </div>
     </div>
