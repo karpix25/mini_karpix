@@ -205,7 +205,7 @@ def get_courses_from_db(db) -> Dict[str, dict]:
             "id": course_id,
             "title": f"Курс {course_id.title()}",
             "description": f"Описание курса {course_id}",
-            "rank_required": 1,  # По умолчанию доступен всем
+            "rank_required": 0,  # По умолчанию доступен всем
         }
     
     return courses
