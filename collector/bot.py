@@ -60,7 +60,7 @@ def setup_database():
         );
     """)
 
-    # 4. Создание таблицы для хранения уроков (для админки)
+    # 4. Создание ОБНОВЛЕННОЙ таблицы для хранения уроков (для админки)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS lessons (
             id SERIAL PRIMARY KEY,
@@ -70,6 +70,8 @@ def setup_database():
             title VARCHAR(255) NOT NULL,
             content TEXT,
             sort_order INT DEFAULT 0,
+            rank_required INT DEFAULT 1,
+            preview_text TEXT,
             created_at TIMESTAMPTZ DEFAULT NOW(),
             updated_at TIMESTAMPTZ DEFAULT NOW(),
             UNIQUE (course_id, lesson_slug)
@@ -97,6 +99,12 @@ def setup_database():
         cur.execute("ALTER TABLE channel_subscribers ADD COLUMN IF NOT EXISTS language_code VARCHAR(10);")
         cur.execute("ALTER TABLE channel_subscribers ADD COLUMN IF NOT EXISTS is_bot BOOLEAN DEFAULT FALSE;")
         cur.execute("ALTER TABLE channel_subscribers ADD COLUMN IF NOT EXISTS last_seen TIMESTAMPTZ DEFAULT NOW();")
+        
+        # 8. НОВЫЕ КОЛОНКИ для таблицы lessons
+        cur.execute("ALTER TABLE lessons ADD COLUMN IF NOT EXISTS rank_required INT DEFAULT 1;")
+        cur.execute("ALTER TABLE lessons ADD COLUMN IF NOT EXISTS preview_text TEXT;")
+        
+        logging.info("Database schema updated successfully")
     except Exception as e:
         logging.warning(f"Error adding columns (they might already exist): {e}")
         
