@@ -7,33 +7,27 @@
     color: var(--tg-theme-text-color, #1A1A1A); /* Темный текст по умолчанию */
 }
 
-/* Общий стиль для всех "карточек" */
 .profile-card {
-    background: var(--tg-theme-bg-color, #FFFFFF); /* Белый фон для всех карточек, как на скриншоте */
+    background: var(--tg-theme-bg-color, #FFFFFF); /* Белый фон для всех карточек */
     border-radius: 12px;
     padding: 20px;
     margin: 16px; /* Отступы между карточками и от краев */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Мягкая тень, как на скриншоте */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Мягкая тень */
 }
 
 .card-title {
     margin: 0 0 16px 0;
     font-size: 20px;
     font-weight: 600;
-    color: var(--tg-theme-text-color, #1A1A1A); /* Темный цвет, как на скриншоте */
+    color: var(--tg-theme-text-color, #1A1A1A);
 }
 
-/* ===== СЕКЦИЯ ПРОФИЛЯ ПОЛЬЗОВАТЕЛЯ ===== */
-.profile-main-card {
-    /* Дополнительные стили для главной карточки профиля, если нужны,
-       иначе она наследует .profile-card */
-}
-
+/* ===== ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ ===== */
 .profile-header {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 24px; /* Отступ перед списком рангов */
+    margin-bottom: 24px; /* Отступ между хедером профиля и списком рангов */
 }
 
 .progress-container {
@@ -41,6 +35,8 @@
     height: 150px;
     position: relative;
     margin-bottom: 15px;
+    /* Стили для react-circular-progressbar (pathColor, trailColor, textColor) будут в JS,
+       но убедитесь, что они соответствуют новой палитре */
 }
 
 .profile-avatar { 
@@ -58,24 +54,19 @@
 
 .profile-rank-badge {
     position: absolute;
-    bottom: 5px; 
-    right: 5px; 
-    background-color: var(--tg-theme-link-color, #4A90E2); 
-    color: #FFFFFF; /* Должен быть белый */
+    bottom: 5px; /* Регулируйте положение */
+    right: 5px; /* Регулируйте положение */
+    background-color: var(--tg-theme-link-color, #4A90E2); /* Синий кружок, как на скриншоте */
+    color: var(--tg-theme-button-text-color, #FFFFFF);
     border-radius: 50%;
-    width: 32px; 
+    width: 32px; /* Размер кружка */
     height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    
-    font-size: 18px; /* Увеличиваем размер шрифта, чтобы было заметнее */
+    font-size: 16px;
     font-weight: 700;
-    line-height: 1; /* Устанавливаем line-height в 1 для точного вертикального центрирования */
-    text-align: center; /* Центрируем текст */
-    z-index: 10; /* Устанавливаем высокий z-index, чтобы быть поверх других элементов */
-
-    border: 2px solid var(--tg-theme-bg-color, #FFFFFF); 
+    border: 2px solid var(--tg-theme-bg-color, #FFFFFF); /* Белая обводка */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
@@ -89,20 +80,20 @@
 .profile-rank-name {
     margin: 5px 0;
     font-size: 16px;
-    color: var(--tg-theme-hint-color, #6C757D); /* Сероватый текст, как на скриншоте */
+    color: var(--tg-theme-hint-color, #6C757D); /* Сероватый текст */
     font-weight: 500;
-    display: flex; 
+    display: flex; /* Для выравнивания иконки */
     align-items: center;
-    gap: 8px; 
+    gap: 8px; /* Отступ между текстом и иконкой */
 }
 
 .rank-icon-text {
-    font-size: 18px; 
+    font-size: 18px; /* Размер иконки */
 }
 
 .profile-points-to-go {
     font-size: 14px;
-    color: var(--tg-theme-link-color, #4A90E2); /* Синий акцент для очков, как на скриншоте */
+    color: var(--tg-theme-link-color, #4A90E2); /* Синий акцент для очков */
     margin-top: 5px;
     display: flex;
     align-items: center;
@@ -114,8 +105,8 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background-color: var(--tg-theme-hint-color, #CED4DA); /* Светло-серый фон */
-    color: var(--tg-theme-bg-color, #FFFFFF); /* Белый текст */
+    background-color: var(--tg-theme-hint-color, #CED4DA);
+    color: var(--tg-theme-bg-color, #FFFFFF);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -125,7 +116,7 @@
 
 /* ===== СПИСОК ВСЕХ РАНГОВ ===== */
 .ranks-list-card {
-    margin-bottom: 16px; 
+    margin-bottom: 16px; /* Отступ перед следующим блоком */
 }
 
 .ranks-list {
@@ -139,20 +130,21 @@
     display: flex;
     align-items: center;
     padding: 12px 16px;
-    background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); /* Светло-серый фон для элементов списка, как на скриншоте */
+    background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); /* Светло-серый фон для элементов списка */
     border-radius: 8px;
     transition: background-color 0.2s ease;
     border: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); 
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* Легкая тень для элементов списка */
 }
 
 .rank-item.unlocked {
-    border-color: var(--tg-theme-success-color, #28a745); /* Более заметная зеленая граница для активного ранга, как на скриншоте */
-    background-color: var(--tg-theme-success-bg-color, rgba(40, 167, 69, 0.1)); /* Легкий зеленый фон для активного ранга */
+    /* Дополнительные стили для разблокированных рангов, если нужно */
+    /* background-color: rgba(40, 167, 69, 0.05);  Пример зеленого легкого фона */
+    border-color: var(--tg-theme-accent-color, #28a745); /* Возможно, легкая зеленая граница */
 }
 
 .rank-item.locked {
-    opacity: 0.6; 
+    opacity: 0.6; /* Немного приглушенный вид */
 }
 
 .rank-item-icon {
@@ -165,80 +157,106 @@
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-    color: var(--tg-theme-text-color, #1A1A1A); /* Темный текст */
 }
 
 .rank-item-info span {
     font-size: 13px;
-    color: var(--tg-theme-hint-color, #6C757D); /* Сероватый текст для очков */
+    color: var(--tg-theme-hint-color, #6C757D); /* Сероватый текст */
 }
 
 
-/* ===== СЕКЦИИ ЛИДЕРБОРДА ===== */
+/* ===== СЕКЦИЯ ЛИДЕРБОРДА ===== */
 .leaderboard-section {
     /* Общие стили карточки уже применены через .profile-card */
 }
 
-.leaderboard-title {
-    /* Используем card-title */
+.leaderboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
 }
 
-/* УБРАНЫ СТИЛИ .period-selector и его кнопок, т.к. теперь их нет */
+.period-selector {
+    display: flex;
+    background-color: var(--tg-theme-secondary-bg-color, #E9ECEF); /* Светло-серый фон для переключателя */
+    border-radius: 8px;
+    padding: 4px;
+}
+
+.period-selector button {
+    border: none;
+    background: transparent;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    color: var(--tg-theme-hint-color, #6C757D); /* Цвет текста неактивных кнопок */
+}
+
+.period-selector button:hover {
+    background-color: rgba(128, 128, 128, 0.1); /* Легкий ховер эффект */
+}
+
+.period-selector button.active {
+    background-color: var(--tg-theme-bg-color, #FFFFFF); /* Белый фон для активной кнопки */
+    color: var(--tg-theme-link-color, #007BFF); /* Акцентный синий цвет */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Легкая тень */
+}
 
 .leaderboard-list {
     display: flex;
     flex-direction: column;
-    /* Увеличен отступ, чтобы соответствовать скриншоту */
-    gap: 12px; 
+    gap: 4px; /* Меньший отступ для более плотного списка */
 }
 
 /* Строка с одним пользователем в лидерборде */
 .leaderboard-user-row {
     display: flex;
     align-items: center;
-    padding: 8px 0; /* Уменьшил padding для соответствия скриншоту */
-    border-radius: 0; /* На скриншоте нет явных скруглений у строк */
+    padding: 10px 8px;
+    border-radius: 8px;
     transition: background-color 0.2s ease;
 }
 
 .leaderboard-user-row:hover {
-    background-color: transparent; /* Ховер-эффект, как на скриншоте */
+    background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); /* Легкий ховер фон */
 }
 
 .user-rank-position {
     flex-shrink: 0;
-    width: 50px; 
+    width: 50px; /* Фиксированная ширина для выравнивания */
     display: flex;
     align-items: center;
     justify-content: flex-start;
     font-weight: 600;
     font-size: 16px;
-    color: var(--tg-theme-hint-color, #6C757D); /* Светло-серый */
-    margin-right: 12px; /* Увеличил отступ */
+    color: var(--tg-theme-hint-color, #6C757D);
+    margin-right: 8px;
 }
 
 .user-rank-position .rank-number {
     width: 24px;
     text-align: center;
-    font-weight: 500; /* Не такой жирный, как на скриншоте */
-    color: var(--tg-theme-text-color, #1A1A1A); /* Темный цвет */
 }
 
 .medal-emoji {
     font-size: 24px;
-    margin-left: 4px; /* Уменьшил отступ для компактности */
+    margin-left: 8px;
     line-height: 1;
 }
 
 .leaderboard-avatar {
-    width: 40px; /* Размер аватара, как на скриншоте */
-    height: 40px;
+    width: 36px; /* Чуть меньше аватар, чем в профиле */
+    height: 36px;
     border-radius: 50%;
     margin-right: 12px;
     object-fit: cover;
     flex-shrink: 0;
-    border: none; /* Нет рамки, как на скриншоте */
-    box-shadow: none; /* Нет тени, как на скриншоте */
+    border: 2px solid var(--tg-theme-bg-color, #FFFFFF); /* Белая рамка */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .leaderboard-user-name {
@@ -248,7 +266,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--tg-theme-text-color, #1A1A1A); /* Темный цвет */
+    color: var(--tg-theme-text-color, #1A1A1A);
     margin-right: 8px;
 }
 
@@ -262,13 +280,12 @@
 
 /* Карточка "Your rank" в лидерборде */
 .leaderboard-your-rank-card {
-    background: var(--tg-theme-secondary-bg-color, #F8F9FA); /* Светло-серый фон, как на скриншоте */
+    background: var(--tg-theme-secondary-bg-color, #E9ECEF); /* Светло-серый фон */
     border-radius: 12px;
     padding: 16px;
     margin-top: 20px;
-    /* Убраны тени и границы, чтобы выглядело как на скриншоте */
-    box-shadow: none;
-    border: none;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05); /* Внутренняя тень */
+    border: 1px solid var(--tg-theme-secondary-bg-color, #D4D8DD); /* Более темная граница */
 }
 
 .leaderboard-your-rank-title {
@@ -286,7 +303,7 @@
 }
 
 
-/* ===== ОБЩИЕ СОСТОЯНИЯ ЗАГРУЗКИ И ОШИБКИ ===== */
+/* ===== ОБЩИЕ СОСТОЯНИЯ ЗАГРУЗКИ И ОШИБКИ (скопированы из Leaderboard/CourseOverview) ===== */
 .common-loading-error-state {
     display: flex;
     flex-direction: column;
@@ -295,7 +312,7 @@
     min-height: 60vh;
     padding: 20px;
     text-align: center;
-    background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); 
+    background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); /* Используем общий фон */
     color: var(--tg-theme-text-color, #1A1A1A);
 }
 
@@ -359,10 +376,13 @@
         font-size: 12px;
     }
 
-    /* Убраны стили period-selector, т.к. нет кнопок */
+    .period-selector button {
+        padding: 6px 10px;
+        font-size: 13px;
+    }
 
     .leaderboard-user-row {
-        padding: 6px 0;
+        padding: 8px 6px;
     }
 
     .user-rank-position {
