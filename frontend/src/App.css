@@ -1,4 +1,5 @@
 /* Переопределяем базовые стили для светлой темы */
+/* Переопределяем базовые стили для светлой темы */
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -6,9 +7,10 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Используем Telegram переменные для фона и текста, с белым/светлым по умолчанию */
-  background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); /* Очень светло-серый для общего фона */
-  color: var(--tg-theme-text-color, #1A1A1A); /* Темный текст для светлой темы */
+  /* ВРЕМЕННО ДЛЯ ТЕСТА: */
+  background-color: red !important; /* <--- ИЗМЕНИТЕ НА ЭТО */
+  /* background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); */ /* Закомментируйте или удалите эту строку */
+  color: var(--tg-theme-text-color, #1A1A1A); 
 }
 
 /* Стили для основных элементов приложения */
