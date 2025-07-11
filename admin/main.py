@@ -295,62 +295,29 @@ COURSE_FORM_TEMPLATE = """
 """
 
 # HTML шаблоны для уроков
-LESSONS_LIST_TEMPLATE = """
-<!DOCTYPE html>
+LESSONS_LIST_TEMPLATE = """<!DOCTYPE html>
 <html>
 <head>
     <title>Уроки курса - {course_name}</title>
     <meta charset="utf-8">
     <style>
-        body { 
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            margin: 0; padding: 20px; background: #f8f9fa; 
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f8f9fa; }
         .container { max-width: 1200px; margin: 0 auto; }
-        .header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 30px; padding: 20px 0; 
-        }
-        .header h1 { margin: 0; color: #2c3e50; font-size: 28px; }
-        .breadcrumb { color: #6c757d; font-size: 14px; margin-bottom: 10px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header h1 { margin: 0; color: #2c3e50; }
+        .breadcrumb { color: #6c757d; margin-bottom: 10px; }
         .breadcrumb a { color: #007bff; text-decoration: none; }
-        .btn { 
-            padding: 12px 24px; background: #007bff; color: white; text-decoration: none; 
-            border-radius: 8px; font-weight: 500; border: none; cursor: pointer;
-        }
+        .btn { padding: 12px 24px; background: #007bff; color: white; text-decoration: none; border-radius: 8px; }
         .btn:hover { background: #0056b3; }
         .btn-secondary { background: #6c757d; }
         .btn-danger { background: #dc3545; }
         .btn-small { padding: 6px 12px; font-size: 12px; }
-        
-        .lessons-list { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .lesson-item { 
-            padding: 20px; border-bottom: 1px solid #e9ecef; 
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .lesson-item:last-child { border-bottom: none; }
-        .lesson-info h3 { margin: 0 0 5px 0; color: #2c3e50; font-size: 18px; }
-        .lesson-meta { color: #6c757d; font-size: 14px; }
+        .course-info { background: white; border-radius: 12px; padding: 20px; margin-bottom: 30px; display: flex; align-items: center; gap: 20px; }
+        .course-cover { width: 80px; height: 80px; border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #6c757d; background: white; border-radius: 12px; }
+        .lessons-list { background: white; border-radius: 12px; overflow: hidden; }
+        .lesson-item { padding: 20px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
         .lesson-actions { display: flex; gap: 8px; }
-        .drag-handle { color: #6c757d; cursor: move; margin-right: 15px; }
-        
-        .empty-state { 
-            text-align: center; padding: 60px 20px; color: #6c757d; 
-            background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        .empty-state h3 { margin-bottom: 10px; color: #495057; }
-        
-        .course-info { 
-            background: white; border-radius: 12px; padding: 20px; margin-bottom: 30px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 20px;
-        }
-        .course-cover { 
-            width: 80px; height: 80px; border-radius: 8px; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;
-        }
-        .course-details h2 { margin: 0 0 5px 0; color: #2c3e50; }
-        .course-details p { margin: 0; color: #6c757d; }
     </style>
 </head>
 <body>
@@ -358,79 +325,47 @@ LESSONS_LIST_TEMPLATE = """
         <div class="breadcrumb">
             <a href="/admin/courses">← Курсы</a> / {course_name}
         </div>
-        
         <div class="header">
             <h1>📖 Уроки курса</h1>
             <a href="/admin/courses/{course_id}/lessons/new" class="btn">+ Новый урок</a>
         </div>
-        
         <div class="course-info">
             <div class="course-cover">{course_initial}</div>
-            <div class="course-details">
+            <div>
                 <h2>{course_name}</h2>
                 <p>{course_description}</p>
             </div>
         </div>
-        
         {lessons_content}
     </div>
 </body>
-</html>
-"""
+</html>"""
 
-LESSON_FORM_TEMPLATE = """
-<!DOCTYPE html>
+
+LESSON_FORM_TEMPLATE = """<!DOCTYPE html>
 <html>
 <head>
     <title>{form_title}</title>
     <meta charset="utf-8">
     <style>
-        body { 
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            margin: 0; padding: 20px; background: #f8f9fa; 
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f8f9fa; }
         .container { max-width: 1000px; margin: 0 auto; }
-        .breadcrumb { color: #6c757d; font-size: 14px; margin-bottom: 10px; }
+        .breadcrumb { color: #6c757d; margin-bottom: 10px; }
         .breadcrumb a { color: #007bff; text-decoration: none; }
-        
-        .form-card { 
-            background: white; border-radius: 12px; padding: 30px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
-        }
-        .form-header { margin-bottom: 30px; }
-        .form-header h1 { margin: 0; color: #2c3e50; font-size: 24px; }
-        .form-header p { margin: 5px 0 0 0; color: #6c757d; }
-        
+        .form-card { background: white; border-radius: 12px; padding: 30px; }
+        .form-header h1 { margin: 0; color: #2c3e50; }
         .form-group { margin-bottom: 20px; }
-        .form-group label { 
-            display: block; margin-bottom: 8px; font-weight: 600; 
-            color: #2c3e50; font-size: 14px; 
-        }
-        .form-group input, .form-group textarea, .form-group select { 
-            width: 100%; padding: 12px; border: 1px solid #dee2e6; 
-            border-radius: 8px; font-size: 14px; box-sizing: border-box;
-        }
-        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { 
-            outline: none; border-color: #007bff; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); 
-        }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px; border: 1px solid #dee2e6; border-radius: 8px; box-sizing: border-box; }
         .form-group textarea { height: 120px; resize: vertical; }
-        .form-group textarea.content-editor { height: 400px; font-family: 'Monaco', 'Menlo', monospace; }
+        .form-group textarea.content-editor { height: 400px; font-family: monospace; }
         .help-text { font-size: 12px; color: #6c757d; margin-top: 4px; }
-        
         .form-row { display: flex; gap: 20px; }
         .form-row .form-group { flex: 1; }
-        
-        .form-actions { 
-            display: flex; gap: 15px; justify-content: flex-end; 
-            margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; 
-        }
-        .btn { 
-            padding: 12px 24px; border-radius: 8px; font-weight: 500; 
-            text-decoration: none; border: none; cursor: pointer; 
-        }
+        .form-actions { display: flex; gap: 15px; justify-content: flex-end; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; }
+        .btn { padding: 12px 24px; border-radius: 8px; text-decoration: none; border: none; cursor: pointer; }
         .btn-primary { background: #007bff; color: white; }
         .btn-secondary { background: #6c757d; color: white; }
-        .btn:hover { opacity: 0.9; }
     </style>
 </head>
 <body>
@@ -440,59 +375,34 @@ LESSON_FORM_TEMPLATE = """
             <a href="/admin/courses/{course_id}/lessons">{course_name}</a> / 
             {form_title}
         </div>
-        
         <div class="form-card">
             <div class="form-header">
                 <h1>{form_title}</h1>
                 <p>Создайте интересный урок для вашего курса</p>
             </div>
-            
             <form method="post">
                 <div class="form-row">
                     <div class="form-group">
                         <label>Название урока</label>
-                        <input type="text" name="title" value="{title}" required maxlength="100" 
-                               placeholder="Например: Основы HTML">
+                        <input type="text" name="title" value="{title}" required maxlength="100" placeholder="Например: Основы HTML">
                         <div class="help-text">Максимум 100 символов</div>
                     </div>
                     <div class="form-group">
                         <label>Порядковый номер</label>
-                        <input type="number" name="order_index" value="{order_index}" min="1" 
-                               placeholder="1">
+                        <input type="number" name="order_index" value="{order_index}" min="1" placeholder="1">
                         <div class="help-text">Порядок показа урока в курсе</div>
                     </div>
                 </div>
-                
                 <div class="form-group">
                     <label>Краткое описание урока</label>
-                    <textarea name="description" maxlength="300" 
-                              placeholder="Краткое описание того, что изучат в этом уроке">{description}</textarea>
+                    <textarea name="description" maxlength="300" placeholder="Краткое описание того, что изучат в этом уроке">{description}</textarea>
                     <div class="help-text">Максимум 300 символов</div>
                 </div>
-                
                 <div class="form-group">
                     <label>Содержимое урока</label>
-                    <textarea name="content" class="content-editor" 
-                              placeholder="# Заголовок урока
-
-Добро пожаловать в урок! Здесь вы можете использовать **Markdown** для форматирования.
-
-## Что мы изучим:
-- Пункт 1
-- Пункт 2 
-- Пункт 3
-
-> Это важная заметка для студентов
-
-```python
-# Пример кода
-print('Привет, мир!')
-```
-
-[Ссылка на дополнительные материалы](https://example.com)">{content}</textarea>
-                    <div class="help-text">Используйте Markdown для форматирования. Поддерживаются заголовки, списки, код, ссылки</div>
+                    <textarea name="content" class="content-editor" placeholder="# Заголовок урока">{content}</textarea>
+                    <div class="help-text">Используйте Markdown для форматирования</div>
                 </div>
-                
                 <div class="form-row">
                     <div class="form-group">
                         <label>Тип урока</label>
@@ -505,12 +415,10 @@ print('Привет, мир!')
                     </div>
                     <div class="form-group">
                         <label>Время прохождения (мин)</label>
-                        <input type="number" name="duration_minutes" value="{duration_minutes}" min="1" 
-                               placeholder="15">
+                        <input type="number" name="duration_minutes" value="{duration_minutes}" min="1" placeholder="15">
                         <div class="help-text">Примерное время на изучение</div>
                     </div>
                 </div>
-                
                 <div class="form-actions">
                     <a href="/admin/courses/{course_id}/lessons" class="btn btn-secondary">Отмена</a>
                     <button type="submit" class="btn btn-primary">Сохранить урок</button>
@@ -519,8 +427,7 @@ print('Привет, мир!')
         </div>
     </div>
 </body>
-</html>
-"""
+</html>"""
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
