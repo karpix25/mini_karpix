@@ -894,23 +894,43 @@ async def list_lessons():
 
 @app.get("/admin/courses/{course_id}/lessons", response_class=HTMLResponse)
 async def list_course_lessons(course_id: int):
-    """Список уроков курса"""
+    """Список уроков курса - С ДИАГНОСТИКОЙ"""
     try:
-        ensure_lessons_table_exists()
+        print(f"🔍 DEBUG: Trying to get course {course_id}")
         
+        # Проверяем создание таблицы
+        table_created = ensure_lessons_table_exists()
+        print(f"🔍 DEBUG: Table created: {table_created}")
+        
+        # Получаем курс
         course = get_course_by_id(course_id)
+        print(f"🔍 DEBUG: Course: {course}")
+        
         if not course:
-            raise HTTPException(status_code=404, detail="Курс не найден")
+            return HTMLResponse(f"""
+            <h1>❌ Курс не найден</h1>
+            <p>Course ID: {course_id}</p>
+            <a href="/admin/courses">← Назад к курсам</a>
+            """)
         
+        # Получаем уроки
         lessons = get_course_lessons(course_id)
+        print(f"🔍 DEBUG: Lessons: {lessons}")
         
-        return HTMLResponse(render_lessons_list(course, lessons))
-    except HTTPException:
-        raise
+        # Рендерим
+        result = render_lessons_list(course, lessons)
+        print(f"🔍 DEBUG: Render successful")
+        
+        return HTMLResponse(result)
+        
     except Exception as e:
+        print(f"❌ ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
         return HTMLResponse(f"""
         <h1>Ошибка: {str(e)}</h1>
-        <a href='/admin/courses'>← Назад к курсам</a>
+        <a href="/admin/courses">← Назад к курсам</a>
         """, status_code=500)
 
 @app.get("/admin/courses/{course_id}/lessons/new", response_class=HTMLResponse) 
