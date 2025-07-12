@@ -1,178 +1,332 @@
-/* frontend/src/LessonReader.css */
-/* Этот файл теперь отвечает только за стилизацию контента урока */
+/* ===== ОСНОВНОЙ КОНТЕЙНЕР ===== */
+.lesson-reader-container {
+  display: flex;
+  flex-direction: column; /* Элементы будут стекаться вертикально */
+  min-height: 100vh;
+  background-color: var(--tg-theme-bg-color, #FFFFFF); /* Белый фон */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: var(--tg-theme-text-color, #1A1A1A); /* Темный текст по умолчанию */
+}
 
-/* --- ЗАГОЛОВОК УРОКА И ГАЛОЧКА ЗАВЕРШЕНИЯ --- */
-.lesson-reader-header {
+/* ===== ВЕРХНИЙ ХЕДЕР (ЗАГОЛОВОК УРОКА И НАВИГАЦИЯ) ===== */
+.lesson-top-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 24px;
-  /* Для десктопа этот класс будет внутри .lesson-content-wrapper */
-}
-
-.lesson-reader-header .lesson-title {
-  font-size: 23px; /* Как на референсе Skool */
-  font-weight: 600;
-  color: var(--tg-theme-text-color);
-  margin: 0;
-  line-height: 1.4;
-  padding-right: 16px; /* Отступ от галочки */
-}
-
-.complete-checkmark {
-  width: 32px;
-  height: 32px;
-  border: 2px solid var(--tg-theme-hint-color);
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-.complete-checkmark svg {
-  fill: var(--tg-theme-hint-color);
-  transition: all 0.2s ease;
-  width: 20px;
-  height: 20px;
+  padding: 16px 20px; /* Отступы по бокам */
+  background: var(--tg-theme-bg-color, #FFFFFF);
+  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); /* Тонкий разделитель */
+  position: sticky; /* Фиксируем хедер при прокрутке */
+  top: 0;
+  z-index: 100;
 }
 
-.complete-checkmark:hover {
-  border-color: #31b585; /* Зеленый при наведении */
-}
-.complete-checkmark:hover svg {
-  fill: #31b585;
-}
-
-.complete-checkmark.completed {
-  background-color: #31b585;
-  border-color: #31b585;
-}
-.complete-checkmark.completed svg {
-  fill: white;
-}
-
-
-/* --- ОСНОВНЫЕ СТИЛИ ДЛЯ MARKDOWN КОНТЕНТА --- */
-.markdown-content {
-  font-size: 16px; /* Базовый размер шрифта */
-  line-height: 1.7; /* Воздушный интерлиньяж */
-  color: var(--tg-theme-text-color);
-}
-
-/* Заголовки */
-.markdown-content h1,
-.markdown-content h2,
-.markdown-content h3 {
+.lesson-top-title {
+  flex-grow: 1; /* Заголовок занимает все доступное место */
+  margin: 0 10px; /* Отступы от кнопок */
+  font-size: 18px; /* Чуть меньше для компактности */
   font-weight: 600;
-  margin-top: 1.5em; /* Отступ сверху */
-  margin-bottom: 0.8em; /* Отступ снизу */
+  color: var(--tg-theme-text-color, #1A1A1A);
+  text-align: center;
+  white-space: nowrap; /* Не переносить заголовок */
+  overflow: hidden;
+  text-overflow: ellipsis; /* Добавляем троеточие, если не помещается */
+}
+
+.nav-text-button {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--tg-theme-link-color, #007BFF); /* Синий цвет для ссылок/кнопок */
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-text-button:hover {
+  opacity: 0.8;
+}
+
+.nav-text-button:disabled {
+  color: var(--tg-theme-hint-color, #6C757D); /* Серый для неактивных кнопок */
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ===== ОСНОВНОЙ КОНТЕНТ УРОКА (Markdown) ===== */
+.lesson-main-content-wrapper {
+  flex: 1; /* Занимает все оставшееся место */
+  padding: 20px; /* Отступы для контента */
+  max-width: 800px; /* Ограничиваем ширину для лучшей читаемости */
+  margin: 0 auto; /* Центрируем контент */
+  line-height: 1.6; /* Базовая высота строки для всего текста */
+  overflow-y: auto; /* Позволяет прокручивать контент */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* --- Стилизация Markdown элементов --- */
+.lesson-main-content-wrapper h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 20px 0;
+  line-height: 1.3;
+  color: var(--tg-theme-text-color, #1A1A1A);
+}
+
+.lesson-main-content-wrapper h2 {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 30px 0 16px 0;
   line-height: 1.4;
-}
-.markdown-content h1 { font-size: 23px; }
-.markdown-content h2 { font-size: 20px; }
-.markdown-content h3 { font-size: 18px; }
-
-/* Параграфы */
-.markdown-content p {
-  margin-bottom: 1em;
+  color: var(--tg-theme-text-color, #1A1A1A);
 }
 
-/* Ссылки */
-.markdown-content a {
-  color: var(--tg-theme-link-color);
+.lesson-main-content-wrapper h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 24px 0 12px 0;
+  line-height: 1.5;
+  color: var(--tg-theme-text-color, #1A1A1A);
+}
+
+.lesson-main-content-wrapper p {
+  font-size: 16px;
+  margin: 0 0 16px 0;
+  color: var(--tg-theme-text-color, #333333); /* Чуть темнее, чем основной текст, для параграфов */
+}
+
+.lesson-main-content-wrapper ul,
+.lesson-main-content-wrapper ol {
+  margin: 16px 0;
+  padding-left: 25px; /* Отступ для маркеров/номеров */
+  color: var(--tg-theme-text-color, #333333);
+}
+
+.lesson-main-content-wrapper li {
+  font-size: 16px;
+  margin-bottom: 8px; /* Отступ между элементами списка */
+  line-height: 1.6;
+}
+
+.lesson-main-content-wrapper a {
+  color: var(--tg-theme-link-color, #007BFF);
   text-decoration: none;
   font-weight: 500;
 }
-.markdown-content a:hover {
+.lesson-main-content-wrapper a:hover {
   text-decoration: underline;
 }
 
-/* Списки */
-.markdown-content ul,
-.markdown-content ol {
-  padding-left: 24px;
-  margin-bottom: 1em;
-}
-
-.markdown-content li::marker {
-  color: var(--tg-theme-hint-color);
-}
-
-/* Изображения */
-.markdown-content img {
-  max-width: 100%;
-  border-radius: 12px;
-  margin: 24px 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-/* Цитаты */
-.markdown-content blockquote {
-  border-left: 3px solid var(--tg-theme-link-color);
-  margin: 1.5em 0;
-  padding: 0.5em 1.5em;
-  color: var(--tg-theme-hint-color);
-  background-color: var(--tg-theme-secondary-bg-color);
-  border-radius: 0 8px 8px 0;
-}
-.markdown-content blockquote p {
-  margin: 0;
-}
-
-/* --- СТИЛИ ДЛЯ БЛОКОВ КОДА --- */
-.code-block-wrapper {
-  position: relative;
-  margin: 24px 0;
-}
-
-/* Блок для <pre> */
-.markdown-content pre {
-  background-color: var(--tg-theme-secondary-bg-color);
-  border: 1px solid var(--tg-theme-secondary-bg-color);
-  border-radius: 8px;
-  padding: 16px;
-  overflow-x: auto;
+.lesson-main-content-wrapper code {
+  background: var(--tg-theme-secondary-bg-color, #E9ECEF); /* Светло-серый фон для inline-кода */
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 14px;
+  color: var(--tg-theme-text-color, #333333);
 }
 
-/* Сам <code> внутри <pre> или inline */
-.markdown-content code {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+.lesson-main-content-wrapper pre {
+  background: var(--tg-theme-secondary-bg-color, #E9ECEF); /* Светло-серый фон для блоков кода */
+  padding: 15px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 20px 0;
 }
 
-/* Отдельный стиль для inline-кода (не в блоке) */
-.markdown-content p > code,
-.markdown-content li > code {
-  background-color: var(--tg-theme-secondary-bg-color);
-  padding: 3px 6px;
-  border-radius: 6px;
-  font-size: 0.9em;
+.lesson-main-content-wrapper pre code {
+  background: none;
+  padding: 0;
+  font-size: 14px;
+  color: var(--tg-theme-text-color, #1A1A1A); /* Темнее для блоков кода */
 }
 
-/* Кнопка "Копировать" */
-.copy-code-button {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background-color: rgba(0, 0, 0, 0.4);
-  color: white;
+.lesson-main-content-wrapper blockquote {
+  border-left: 4px solid var(--tg-theme-link-color, #007BFF); /* Синяя полоса слева */
+  padding: 15px 20px;
+  margin: 20px 0;
+  background: rgba(0, 123, 255, 0.05); /* Легкий синий фон */
+  border-radius: 0 8px 8px 0;
+  color: var(--tg-theme-text-color, #1A1A1A);
+  font-style: italic;
+}
+
+
+/* ===== НИЖНЯЯ НАВИГАЦИЯ МЕЖДУ УРОКАМИ И КНОПКА ЗАВЕРШЕНИЯ ===== */
+.lesson-bottom-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: var(--tg-theme-bg-color, #FFFFFF); /* Белый фон */
+  border-top: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); /* Разделитель */
+  flex-wrap: wrap; /* Позволяет кнопкам переноситься на новую строку на мобильных */
+  gap: 15px; /* Отступ между элементами */
+}
+
+.bottom-nav-button {
+  background: var(--tg-theme-button-color, #007BFF); /* Синяя кнопка */
+  color: var(--tg-theme-button-text-color, #FFFFFF);
   border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 12px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s ease, background-color 0.2s ease;
-  z-index: 1;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  flex-grow: 1; /* Кнопки будут растягиваться */
+  min-width: 140px; /* Минимальная ширина, чтобы не были слишком узкими */
+  text-align: center;
 }
 
-.code-block-wrapper:hover .copy-code-button {
-  opacity: 1;
+.bottom-nav-button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
-.copy-code-button:hover {
-  background-color: rgba(0, 0, 0, 0.6);
+.bottom-nav-button:disabled {
+  background: var(--tg-theme-secondary-bg-color, #E9ECEF); /* Серый фон для неактивной кнопки */
+  color: var(--tg-theme-hint-color, #6C757D);
+  cursor: not-allowed;
+  opacity: 0.8;
+  transform: none;
 }
+
+.bottom-complete-button {
+  background: var(--tg-theme-secondary-bg-color, #E9ECEF); /* Серый фон для кнопки завершения */
+  color: var(--tg-theme-text-color, #1A1A1A);
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-grow: 1;
+  min-width: 140px;
+  text-align: center;
+}
+
+.bottom-complete-button.completed {
+  background: var(--tg-theme-success-bg-color, #28a745); /* Зеленый фон, когда завершено */
+  color: var(--tg-theme-button-text-color, #FFFFFF);
+}
+
+.bottom-complete-button:hover:not(.completed) {
+  background: var(--tg-theme-link-color, #007BFF); /* Синий при наведении, если не завершено */
+  color: var(--tg-theme-button-text-color, #FFFFFF);
+}
+.bottom-complete-button.completed:hover {
+    opacity: 0.9; /* Немного затемняем при наведении, если уже завершено */
+}
+
+
+/* ===== ОБЩИЕ СОСТОЯНИЯ ЗАГРУЗКИ И ОШИБКИ ===== */
+/* Используем общие классы, определенные в Profile.css или App.css */
+.common-loading-error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: 20px;
+    text-align: center;
+    background-color: var(--tg-theme-bg-color, #FFFFFF); /* Белый фон */
+    color: var(--tg-theme-text-color, #1A1A1A);
+}
+
+.common-loading-error-state .loading-spinner { 
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--tg-theme-secondary-bg-color, #E9ECEF);
+    border-top: 3px solid var(--tg-theme-link-color, #007BFF);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.common-loading-error-state p {
+    margin: 0;
+    font-size: 16px;
+    color: var(--tg-theme-hint-color, #6C757D);
+}
+
+.common-loading-error-state h2 { 
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  color: var(--tg-theme-text-color, #1A1A1A);
+}
+
+.common-loading-error-state .back-button { 
+  background: var(--tg-theme-button-color, #007bff);
+  color: var(--tg-theme-button-text-color, #ffffff);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.common-loading-error-state .back-button:hover {
+  opacity: 0.9;
+}
+
+
+/* ===== АДАПТИВНОСТЬ ===== */
+@media (max-width: 768px) {
+  .lesson-top-header {
+    padding: 12px 16px;
+  }
+  .lesson-top-title {
+    font-size: 16px;
+  }
+  .nav-text-button {
+    font-size: 14px;
+  }
+  .lesson-main-content-wrapper {
+    padding: 15px; /* Меньший padding на мобильных */
+  }
+  /* Уменьшаем размеры шрифтов для мобильных */
+  .lesson-main-content-wrapper h1 { font-size: 24px; margin: 0 0 15px 0; }
+  .lesson-main-content-wrapper h2 { font-size: 20px; margin: 25px 0 12px 0; }
+  .lesson-main-content-wrapper h3 { font-size: 17px; margin: 20px 0 10px 0; }
+  .lesson-main-content-wrapper p, 
+  .lesson-main-content-wrapper ul li, 
+  .lesson-main-content-wrapper ol li { font-size: 15px; }
+  .lesson-main-content-wrapper code { font-size: 13px; }
+  .lesson-main-content-wrapper pre { padding: 12px; margin: 15px 0; }
+
+  .lesson-bottom-navigation {
+    flex-direction: column; /* Кнопки стекаются на мобильных */
+    padding: 15px;
+    gap: 10px;
+  }
+  .bottom-nav-button, .bottom-complete-button {
+    min-width: 100%; /* Занимают всю ширину */
+  }
+}
+
+/* @media (min-width: 1024px) { */
+/*   .lesson-reader-container { */
+/*     flex-direction: row; // Делаем flex-row для сайдбара и контента */
+/*   } */
+/*   .lesson-top-header { */
+/*     display: none; // Скрываем верхний хедер, если сайдбар его заменяет */
+/*   } */
+/*   .lesson-main-content-wrapper { */
+/*     padding: 30px 40px; // Больше padding на десктопе */
+/*   } */
+/*   .lesson-bottom-navigation { */
+/*     flex-direction: row; // Снова в ряд на десктопе */
+/*   } */
+/* } */
