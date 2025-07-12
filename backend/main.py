@@ -225,34 +225,6 @@ def get_combined_courses_data(db) -> Dict[str, dict]:
     
     return all_courses
 
-# --- ФУНКЦИИ ДЛЯ РАБОТЫ С КУРСАМИ ИЗ БД ---
-
-def get_courses_from_db(db) -> Dict[str, dict]:
-    """Получает все курсы из БД и группирует их"""
-    cur = db.cursor()
-    cur.execute("""
-        SELECT course_id, 
-               MIN(rank_required) as min_rank_required,
-               COALESCE(MIN(sort_order), 0) as min_sort_order
-        FROM lessons 
-        GROUP BY course_id 
-        ORDER BY min_sort_order, course_id
-    """)
-    courses_data = cur.fetchall()
-    cur.close()
-    
-    courses = {}
-    for course_row in courses_data:
-        course_id = course_row['course_id']
-        courses[course_id] = {
-            "id": course_id,
-            "title": f"Курс {course_id.title()}",
-            "description": f"Описание курса {course_id}",
-            "rank_required": course_row['min_rank_required'] or 1,
-            "admin_course": False
-        }
-    
-    return courses
 
 def get_course_sections_from_db(db, course_id: str) -> List[dict]:
     """Получает секции и уроки курса из БД"""
