@@ -1,3 +1,5 @@
+// frontend/src/Content.js
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Content.css';
@@ -5,9 +7,17 @@ import './Content.css';
 const tg = window.Telegram?.WebApp;
 const BACKEND_URL = "https://miniback.karpix.com";
 
+// --- ИЗМЕНЕНИЕ: Добавили компонент для иконки замка, чтобы не ставить библиотеки ---
+const LockIcon = ({ size = 32, color = 'white' }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+  </svg>
+);
+
 // Компонент для одной карточки курса
 const CourseCard = ({ course }) => {
-  // Генерируем цвета для превью на основе ID
+  // Ваши функции для стилизации остаются без изменений
   const getPreviewColor = (id) => {
     const colors = [
       'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -21,7 +31,6 @@ const CourseCard = ({ course }) => {
     return colors[index];
   };
 
-  // Определяем статус курса
   const getStatusBadge = (rankRequired) => {
     if (rankRequired <= 1) return { text: 'Доступно', color: '#28a745' };
     if (rankRequired <= 2) return { text: 'Новичок+', color: '#ffc107' };
@@ -31,60 +40,77 @@ const CourseCard = ({ course }) => {
 
   const status = getStatusBadge(course.rank_required);
 
-  return (
-    <Link to={`/course/${course.id}`} className="course-card-link">
-      <div className="course-card">
-        {/* Превью изображение */}
-        <div 
-          className="course-preview"
-          style={{ background: getPreviewColor(course.id) }}
-        >
-          <div className="course-preview-content">
-            <div className="course-icon">📚</div>
+  // --- ИЗМЕНЕНИЕ: Выносим содержимое карточки в отдельную переменную, чтобы не дублировать ---
+  const cardContent = (
+    // Добавляем класс .locked, если курс не разблокирован
+    <div className={`course-card ${!course.is_unlocked ? 'locked' : ''}`}>
+      <div 
+        className="course-preview"
+        style={{ background: getPreviewColor(course.id) }}
+      >
+        <div className="course-preview-content">
+          <div className="course-icon">📚</div>
+          {/* Показываем бейдж только если курс разблокирован */}
+          {course.is_unlocked && (
             <div className="rank-badge" style={{ backgroundColor: status.color }}>
               {status.text}
             </div>
+          )}
+        </div>
+        
+        {/* --- ИЗМЕНЕНИЕ: Добавляем оверлей с замком --- */}
+        {!course.is_unlocked && (
+          <div className="course-lock-overlay">
+            <LockIcon />
+            <p className="lock-overlay-text">Private Course</p>
+          </div>
+        )}
+      </div>
+
+      <div className="course-content">
+        <h3 className="course-title">{course.title}</h3>
+        <p className="course-description">
+          {course.description || 'Изучите основы и продвинутые техники. Получите практические навыки и знания.'}
+        </p>
+
+        <div className="course-progress">
+          <div className="progress-info">
+            <span className="progress-text">{course.progress}% завершено</span>
+            <span className="lessons-count">{course.total_lessons} уроков</span>
+          </div>
+          <div className="progress-bar">
+            <div className="progress-fill" style={{ width: `${course.progress}%` }}></div>
           </div>
         </div>
 
-        {/* Контент карточки */}
-        <div className="course-content">
-          <h3 className="course-title">{course.title}</h3>
-          <p className="course-description">
-            {course.description || 'Изучите основы и продвинутые техники. Получите практические навыки и знания.'}
-          </p>
-
-          {/* Прогресс */}
-          <div className="course-progress">
-            <div className="progress-info">
-              <span className="progress-text">{course.progress}% завершено</span>
-              <span className="lessons-count">{course.total_lessons} уроков</span>
-            </div>
-            <div className="progress-bar">
-              <div 
-                className="progress-fill" 
-                style={{ width: `${course.progress}%` }}
-              ></div>
-            </div>
-          </div>
-
-          {/* Метаинформация */}
-          <div className="course-meta">
-            <span className="course-difficulty">
-              <span className="meta-icon">⭐</span>
-              Ранг {course.rank_required}
-            </span>
-            <span className="course-duration">
-              <span className="meta-icon">📖</span>
-              {course.completed_lessons}/{course.total_lessons}
-            </span>
-          </div>
+        <div className="course-meta">
+          <span className="course-difficulty">
+            <span className="meta-icon">⭐</span>
+            Ранг {course.rank_required}
+          </span>
+          <span className="course-duration">
+            <span className="meta-icon">📖</span>
+            {course.completed_lessons}/{course.total_lessons}
+          </span>
         </div>
       </div>
+    </div>
+  );
+
+  // --- ИЗМЕНЕНИЕ: Условный рендеринг ссылки ---
+  // Если курс разблокирован, оборачиваем в Link, иначе - в простой div
+  return course.is_unlocked ? (
+    <Link to={`/course/${course.id}`} className="course-card-link">
+      {cardContent}
     </Link>
+  ) : (
+    <div className="course-card-link">
+      {cardContent}
+    </div>
   );
 };
 
+// --- Ваш основной компонент Content остается без изменений ---
 function Content() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -99,23 +125,17 @@ function Content() {
       }
 
       try {
-        // ИЗМЕНЕНО: используем новый API /api/courses вместо /api/content
         const response = await fetch(`${BACKEND_URL}/api/courses`, {
           headers: { 'X-Init-Data': tg.initData }
         });
         
         if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error('Ошибка авторизации. Перезапустите приложение.');
-          }
-          if (response.status === 403) {
-            throw new Error('Доступ запрещен. Убедитесь, что вы участник канала.');
-          }
+          if (response.status === 401) throw new Error('Ошибка авторизации. Перезапустите приложение.');
+          if (response.status === 403) throw new Error('Доступ запрещен. Убедитесь, что вы участник канала.');
           throw new Error('Не удалось загрузить курсы');
         }
         
         const data = await response.json();
-        console.log('Loaded courses:', data); // Для отладки
         setCourses(data);
       } catch (error) {
         console.error("Ошибка при загрузке курсов:", error);
@@ -131,12 +151,8 @@ function Content() {
   if (loading) {
     return (
       <div className="content-container">
-        <div className="content-header">
-          <h2>📚 Обучающие курсы</h2>
-        </div>
-        <div className="loading-state">
-          <div className="loader">Загрузка курсов...</div>
-        </div>
+        <div className="content-header"><h2>📚 Обучающие курсы</h2></div>
+        <div className="loading-state"><div className="loader">Загрузка курсов...</div></div>
       </div>
     );
   }
@@ -144,23 +160,10 @@ function Content() {
   if (error) {
     return (
       <div className="content-container">
-        <div className="content-header">
-          <h2>📚 Обучающие курсы</h2>
-        </div>
+        <div className="content-header"><h2>📚 Обучающие курсы</h2></div>
         <div className="error-state">
           <p>❌ {error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            style={{
-              padding: '10px 20px',
-              background: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              marginTop: '10px',
-              cursor: 'pointer'
-            }}
-          >
+          <button onClick={() => window.location.reload()} style={{ padding: '10px 20px', background: '#007bff', color: 'white', border: 'none', borderRadius: '5px', marginTop: '10px', cursor: 'pointer' }}>
             Попробовать снова
           </button>
         </div>
@@ -172,18 +175,13 @@ function Content() {
     <div className="content-container">
       <div className="content-header">
         <h2>📚 Обучающие курсы</h2>
-        <p className="content-subtitle">
-          Развивайте навыки, повышайте ранг и получайте доступ к новому контенту
-        </p>
+        <p className="content-subtitle">Развивайте навыки, повышайте ранг и получайте доступ к новому контенту</p>
       </div>
 
       {courses.length > 0 ? (
         <div className="courses-grid">
           {courses.map((course) => (
-            <CourseCard 
-              key={course.id} 
-              course={course}
-            />
+            <CourseCard key={course.id} course={course} />
           ))}
         </div>
       ) : (
