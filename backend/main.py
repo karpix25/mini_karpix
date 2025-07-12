@@ -313,10 +313,12 @@ async def get_courses(user: dict = Depends(get_current_user), db=Depends(get_db_
     for course_id, course_meta in courses_data.items():
         if course_meta.get("rank_required", 1) <= user_rank_level:
             
-            # Для админ-курсов пока показываем 0 уроков
+            # Для админ-курсов считаем реальное количество уроков
             if course_meta.get("admin_course", False):
-                total_lessons = 0
-                completed_lessons = 0
+                real_course_id = int(course_id.replace("admin_", ""))
+                cur.execute("SELECT COUNT(*) FROM course_lessons WHERE course_id = %s AND is_published = true", (real_course_id,))
+                total_lessons = cur.fetchone()['count']
+                completed_lessons = 0  # TODO: добавить подсчет прогресса
                 progress = 0
             else:
                 # Для обычных курсов считаем как раньше
@@ -369,63 +371,100 @@ async def get_course_detail(course_id: str, user: dict = Depends(get_current_use
         cur.close()
         raise HTTPException(status_code=403, detail="Недостаточно прав для доступа к курсу")
     
-    # Если это админ-курс, показываем заглушку
     # Если это админ-курс, получаем уроки из course_lessons
-if course_meta.get("admin_course", False):
-    # Извлекаем реальный ID курса из admin_X
-    real_course_id = int(course_id.replace("admin_", ""))
-    
-    # Получаем уроки из новой таблицы course_lessons
-    cur.execute("""
-        SELECT id, title, description, lesson_type, order_index, duration_minutes
-        FROM course_lessons 
-        WHERE course_id = %s AND is_published = true
-        ORDER BY order_index, created_at
-    """, (real_course_id,))
-    admin_lessons = cur.fetchall()
-    
-    if not admin_lessons:
-        # Если нет уроков, показываем заглушку
+    if course_meta.get("admin_course", False):
+        # Извлекаем реальный ID курса из admin_X
+        real_course_id = int(course_id.replace("admin_", ""))
+        
+        # Получаем уроки из новой таблицы course_lessons
+        cur.execute("""
+            SELECT id, title, description, lesson_type, order_index, duration_minutes
+            FROM course_lessons 
+            WHERE course_id = %s AND is_published = true
+            ORDER BY order_index, created_at
+        """, (real_course_id,))
+        admin_lessons = cur.fetchall()
+        
+        if not admin_lessons:
+            # Если нет уроков, показываем заглушку
+            cur.close()
+            return CourseDetail(
+                id=course_id,
+                title=course_meta["title"],
+                description=course_meta["description"],
+                rank_required=course_meta["rank_required"],
+                sections=[{
+                    "id": "coming_soon",
+                    "title": "Скоро появятся уроки",
+                    "lessons": [{
+                        "id": "placeholder",
+                        "title": "Уроки для этого курса скоро будут добавлены!",
+                        "completed": False
+                    }]
+                }],
+                progress=0
+            )
+        
+        # Формируем секции из админских уроков
+        sections = [{
+            "id": "main_section",
+            "title": "Основные уроки",
+            "lessons": []
+        }]
+        
+        for lesson in admin_lessons:
+            sections[0]["lessons"].append({
+                "id": f"lesson_{lesson['id']}",
+                "title": lesson['title'],
+                "completed": False  # TODO: добавить проверку прогресса
+            })
+        
         cur.close()
         return CourseDetail(
             id=course_id,
             title=course_meta["title"],
             description=course_meta["description"],
             rank_required=course_meta["rank_required"],
-            sections=[{
-                "id": "coming_soon",
-                "title": "Скоро появятся уроки",
-                "lessons": [{
-                    "id": "placeholder",
-                    "title": "Уроки для этого курса скоро будут добавлены!",
-                    "completed": False
-                }]
-            }],
-            progress=0
+            sections=sections,
+            progress=0  # TODO: посчитать реальный прогресс
         )
     
-    # Формируем секции из админских уроков
-    sections = [{
-        "id": "main_section",
-        "title": "Основные уроки",
-        "lessons": []
-    }]
+    # Для обычных курсов используем существующую логику
+    # Проверяем, существует ли курс в lessons
+    cur.execute("SELECT COUNT(*) FROM lessons WHERE course_id = %s", (course_id,))
+    if cur.fetchone()['count'] == 0:
+        cur.close()
+        raise HTTPException(status_code=404, detail="Курс не найден")
     
-    for lesson in admin_lessons:
-        sections[0]["lessons"].append({
-            "id": f"lesson_{lesson['id']}",
-            "title": lesson['title'],
-            "completed": False  # TODO: добавить проверку прогресса
-        })
+    # Получаем секции и уроки
+    sections = get_course_sections_from_db(db, course_id)
+    
+    # Получаем прогресс пользователя
+    cur.execute("""
+        SELECT lesson_id FROM user_lesson_progress
+        WHERE user_id = %s AND course_id = %s;
+    """, (user_id, course_id))
+    completed_lesson_rows = cur.fetchall()
+    completed_lesson_ids = {row['lesson_id'] for row in completed_lesson_rows}
+    
+    # Отмечаем завершенные уроки
+    total_lessons = 0
+    for section in sections:
+        total_lessons += len(section['lessons'])
+        for lesson in section['lessons']:
+            lesson['completed'] = lesson['id'] in completed_lesson_ids
+
+    progress = int((len(completed_lesson_ids) / total_lessons) * 100) if total_lessons > 0 else 0
     
     cur.close()
+    
     return CourseDetail(
         id=course_id,
         title=course_meta["title"],
         description=course_meta["description"],
         rank_required=course_meta["rank_required"],
         sections=sections,
-        progress=0  # TODO: посчитать реальный прогресс
+        progress=progress
     )
 
 @app.get("/api/courses/{course_id}/lessons/{lesson_id}", response_model=LessonContent)
@@ -451,7 +490,33 @@ async def get_lesson_content(course_id: str, lesson_id: str, user: dict = Depend
         cur.close()
         raise HTTPException(status_code=403, detail="Недостаточно прав")
     
-    # Получаем урок из БД
+    # Если это админ-курс, получаем урок из course_lessons
+    if course_meta.get("admin_course", False):
+        # Извлекаем ID урока из lesson_X
+        real_lesson_id = int(lesson_id.replace("lesson_", ""))
+        
+        cur.execute("""
+            SELECT title, content, description
+            FROM course_lessons 
+            WHERE id = %s AND is_published = true
+        """, (real_lesson_id,))
+        lesson_data = cur.fetchone()
+        
+        if not lesson_data:
+            cur.close()
+            raise HTTPException(status_code=404, detail="Урок не найден")
+        
+        cur.close()
+        
+        return LessonContent(
+            id=lesson_id,
+            title=lesson_data['title'],
+            content=lesson_data['content'] or "",
+            course_id=course_id,
+            section_id="main_section"
+        )
+    
+    # Для обычных курсов используем старую логику
     cur.execute("""
         SELECT section_id, title, content
         FROM lessons 
