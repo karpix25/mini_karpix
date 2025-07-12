@@ -295,9 +295,11 @@ def get_course_sections_from_db(db, course_id: str) -> List[dict]:
 
 # --- ОБНОВЛЕННЫЕ ЭНДПОИНТЫ ДЛЯ КУРСОВ ---
 
+# --- НАЧАЛО ПРАВИЛЬНОЙ ФУНКЦИИ (копируйте отсюда) ---
+
 @app.get("/api/courses", response_model=List[CourseInfo])
 async def get_courses(user: dict = Depends(get_current_user), db=Depends(get_db_connection)):
-    """Получить список всех доступных курсов из БД + Админки"""
+    """Получить список ВСЕХ курсов (открытых и закрытых) из БД + Админки"""
     user_id = user.get("id")
     
     cur = db.cursor()
@@ -311,62 +313,62 @@ async def get_courses(user: dict = Depends(get_current_user), db=Depends(get_db_
     courses_data = get_combined_courses_data(db)
     courses = []
     
-# --- НАЧАЛО НОВОГО БЛОКА ДЛЯ ВСТАВКИ ---
+    # Весь этот блок теперь находится ВНУТРИ функции с правильным отступом
+    for course_id, course_meta in courses_data.items():
+        # 1. Вычисляем флаг is_unlocked вместо фильтрации
+        is_unlocked = course_meta.get("rank_required", 1) <= user_rank_level
 
-for course_id, course_meta in courses_data.items():
-    # 1. Вычисляем флаг is_unlocked вместо фильтрации
-    is_unlocked = course_meta.get("rank_required", 1) <= user_rank_level
+        # 2. Задаем значения по умолчанию. Для заблокированных курсов они останутся нулевыми.
+        progress = 0
+        total_lessons = 0
+        completed_lessons = 0
 
-    # 2. Задаем значения по умолчанию. Для заблокированных курсов они останутся нулевыми.
-    progress = 0
-    total_lessons = 0
-    completed_lessons = 0
+        # 3. Считаем реальный прогресс ТОЛЬКО для разблокированных курсов
+        if is_unlocked:
+            if course_meta.get("admin_course", False):
+                try:
+                    real_course_id = int(course_id.replace("admin_", ""))
+                except ValueError:
+                    print(f"Invalid admin course ID: {course_id}")
+                    continue
+                
+                cur.execute("SELECT COUNT(*) FROM course_lessons WHERE course_id = %s AND is_published = true", (real_course_id,))
+                total_lessons_res = cur.fetchone()
+                total_lessons = total_lessons_res['count'] if total_lessons_res else 0
+                
+                # TODO: Добавить логику подсчета пройденных уроков админ-курса
+                completed_lessons = 0 
+            else:
+                cur.execute("SELECT COUNT(*) FROM lessons WHERE course_id = %s", (course_id,))
+                total_lessons_res = cur.fetchone()
+                total_lessons = total_lessons_res['count'] if total_lessons_res else 0
+                
+                cur.execute("SELECT COUNT(*) FROM user_lesson_progress WHERE user_id = %s AND course_id = %s;", (user_id, course_id))
+                completed_lessons_res = cur.fetchone()
+                completed_lessons = completed_lessons_res['count'] if completed_lessons_res else 0
+                
+            progress = int((completed_lessons / total_lessons) * 100) if total_lessons > 0 else 0
+        
+        # 4. Добавляем КАЖДЫЙ курс в итоговый список, передавая новый флаг
+        courses.append(CourseInfo(
+            id=course_id,
+            title=course_meta["title"],
+            description=course_meta["description"],
+            rank_required=course_meta["rank_required"],
+            progress=progress,
+            total_lessons=total_lessons,
+            completed_lessons=completed_lessons,
+            is_unlocked=is_unlocked
+        ))
 
-    # 3. Считаем реальный прогресс ТОЛЬКО для разблокированных курсов
-    if is_unlocked:
-        if course_meta.get("admin_course", False):
-            try:
-                real_course_id = int(course_id.replace("admin_", ""))
-            except ValueError:
-                print(f"Invalid admin course ID: {course_id}")
-                continue
-            
-            cur.execute("SELECT COUNT(*) FROM course_lessons WHERE course_id = %s AND is_published = true", (real_course_id,))
-            total_lessons_res = cur.fetchone()
-            total_lessons = total_lessons_res['count'] if total_lessons_res else 0
-            
-            # TODO: Добавить логику подсчета пройденных уроков админ-курса
-            completed_lessons = 0 
-        else:
-            cur.execute("SELECT COUNT(*) FROM lessons WHERE course_id = %s", (course_id,))
-            total_lessons_res = cur.fetchone()
-            total_lessons = total_lessons_res['count'] if total_lessons_res else 0
-            
-            cur.execute("SELECT COUNT(*) FROM user_lesson_progress WHERE user_id = %s AND course_id = %s;", (user_id, course_id))
-            completed_lessons_res = cur.fetchone()
-            completed_lessons = completed_lessons_res['count'] if completed_lessons_res else 0
-            
-        progress = int((completed_lessons / total_lessons) * 100) if total_lessons > 0 else 0
-    
-    # 4. Добавляем КАЖДЫЙ курс в итоговый список, передавая новый флаг
-    courses.append(CourseInfo(
-        id=course_id,
-        title=course_meta["title"],
-        description=course_meta["description"],
-        rank_required=course_meta["rank_required"],
-        progress=progress,
-        total_lessons=total_lessons,
-        completed_lessons=completed_lessons,
-        is_unlocked=is_unlocked  # <-- Передаем наш новый флаг на фронтенд
-    ))
+    cur.close()
 
-cur.close()
+    # Сортируем курсы, чтобы разблокированные были вверху.
+    courses.sort(key=lambda c: (not c.is_unlocked, c.rank_required))
 
-# (Опционально, но полезно) Сортируем курсы, чтобы разблокированные были вверху.
-courses.sort(key=lambda c: (not c.is_unlocked, c.rank_required))
+    return courses
 
-return courses
-
+# --- КОНЕЦ ПРАВИЛЬНОЙ ФУНКЦИИ (копируйте до сюда) ---
 # --- КОНЕЦ НОВОГО БЛОКА ---
 
 @app.get("/api/courses/{course_id}", response_model=CourseDetail)
