@@ -416,7 +416,8 @@ async def get_course_detail(course_id: str, user: dict = Depends(get_current_use
             sections[0]["lessons"].append({
                 "id": f"lesson_{lesson['id']}",
                 "title": lesson['title'],
-                "completed": False  # TODO: добавить проверку прогресса
+                "completed": False,
+                "locked": False  # Добавляем поле что урок НЕ заблокирован
             })
         
         cur.close()
