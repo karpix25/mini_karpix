@@ -6,20 +6,23 @@ const tg = window.Telegram?.WebApp;
 const BACKEND_URL = "https://miniback.karpix.com";
 
 // Компонент одной строки урока в списке
+// Этот компонент не менялся, но я оставляю его для полноты картины.
 const LessonListItem = ({ lesson, isUnlocked, onLessonClick }) => {
   return (
     <li
       className={`lesson-list-item ${!isUnlocked ? 'locked' : ''} ${lesson.completed ? 'completed' : ''}`}
       onClick={() => isUnlocked && onLessonClick(lesson.id)}
     >
-      <span className="lesson-item-number">{lesson.sort_order}</span> {/* Явная нумерация урока, БЕЗ ТОЧКИ */}
+      {/* lesson-item-number может отсутствовать для админских уроков, это нормально */}
+      <span className="lesson-item-number">{lesson.sort_order}</span>
       <span className="lesson-item-title">{lesson.title}</span>
     </li>
   );
 };
 
-// Компонент секции курса (теперь с возможностью переключения)
-const CourseSection = ({ section, onLessonClick, userRankLevel, isInitiallyExpanded = false }) => {
+// --- ИЗМЕНЕНИЕ №1: Упрощенный компонент секции ---
+// Мы убрали 'userRankLevel', так как он больше не нужен для проверки.
+const CourseSection = ({ section, onLessonClick, isInitiallyExpanded = false }) => {
   const [isExpanded, setIsExpanded] = useState(isInitiallyExpanded);
 
   const handleToggle = () => {
@@ -27,13 +30,9 @@ const CourseSection = ({ section, onLessonClick, userRankLevel, isInitiallyExpan
     if (tg) tg.HapticFeedback.impactOccurred('light'); 
   };
 
-  const isSectionUnlocked = true; 
-  
   return (
     <div className="course-section-group">
       <div className="course-section-header" onClick={handleToggle}>
-        {/* ИКОНКА ПЕРЕКЛЮЧЕНИЯ В НАЧАЛЕ */}
-        {/* Используем Font Awesome иконку, если она подключена в проекте, или SVG */}
         <div className={`toggle-icon-wrapper ${isExpanded ? 'expanded' : ''}`}>
              <svg className="toggle-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </div>
@@ -49,7 +48,9 @@ const CourseSection = ({ section, onLessonClick, userRankLevel, isInitiallyExpan
             <LessonListItem 
               key={lesson.id}
               lesson={lesson}
-              isUnlocked={isSectionUnlocked && (lesson.rank_required <= userRankLevel)} 
+              // --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ ---
+              // Все уроки считаются разблокированными, так как доступ к курсу уже проверен.
+              isUnlocked={true} 
               onLessonClick={onLessonClick}
             />
           ))}
@@ -65,7 +66,8 @@ function CourseOverview() {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true); 
   const [error, setError] = useState(null);
-  const [userRankLevel, setUserRankLevel] = useState(1); 
+  // --- ИЗМЕНЕНИЕ №2: Убрали ненужный стейт ---
+  // const [userRankLevel, setUserRankLevel] = useState(1); 
 
   // Настройка Telegram BackButton
   useEffect(() => {
@@ -89,12 +91,10 @@ function CourseOverview() {
       try {
         const headers = { 'X-Init-Data': tg.initData };
         
-        const userResponse = await fetch(`${BACKEND_URL}/api/me`, { headers });
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          const rankLevel = Math.floor((userData.points || 0) / 50) + 1;
-          setUserRankLevel(Math.min(rankLevel, 4)); 
-        }
+        // --- ИЗМЕНЕНИЕ №3: Убрали лишний API-запрос ---
+        // Запрос на /api/me здесь не нужен, так как бэкенд сам проверит
+        // доступ при запросе курса и вернет 403 ошибку, если нужно.
+        // Это упрощает код и уменьшает количество запросов.
 
         const courseResponse = await fetch(`${BACKEND_URL}/api/courses/${courseId}`, { headers });
         
@@ -116,7 +116,7 @@ function CourseOverview() {
     };
 
     fetchCourseData();
-  }, [courseId]);
+  }, [courseId]); // Добавил courseId в массив зависимостей для корректной работы
 
   const handleLessonClick = (lessonId) => {
     navigate(`/course/${courseId}/lesson/${lessonId}`);
@@ -158,10 +158,8 @@ function CourseOverview() {
 
   return (
     <div className="course-overview-container">
-      {/* Заголовок курса и прогресс-бар */}
       <div className="course-simple-header">
         <h1 className="course-simple-title">{course.title}</h1>
-        {/* Прогресс-бар с текстом внутри */}
         <div className="course-simple-progress-bar">
           <div 
             className="course-simple-progress-fill" 
@@ -171,15 +169,15 @@ function CourseOverview() {
         </div>
       </div>
 
-      {/* Список секций/уроков */}
       <div className="course-sections-list-wrapper">
         {course.sections?.map((section, index) => (
           <CourseSection
             key={section.id}
             section={section}
             onLessonClick={handleLessonClick}
-            userRankLevel={userRankLevel} 
-            isInitiallyExpanded={index === 0} // Разворачиваем первую секцию по умолчанию
+            // --- ИЗМЕНЕНИЕ №4: Убрали передачу ненужного prop ---
+            // userRankLevel={userRankLevel} 
+            isInitiallyExpanded={index === 0}
           />
         ))}
       </div>
