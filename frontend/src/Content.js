@@ -208,10 +208,10 @@ function Content() {
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
-      // Прокручиваем к началу контейнера
-      document.querySelector('.content-container')?.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start' 
+      // Прокручиваем к началу страницы с отступом
+      window.scrollTo({ 
+        top: 0, 
+        behavior: 'smooth' 
       });
     }
   };
