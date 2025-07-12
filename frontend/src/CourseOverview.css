@@ -264,3 +264,77 @@
 .section-lessons-list {
     animation: slideDown 0.3s ease-out;
 }
+
+/* ===== СТИЛИ ДЛЯ ДВУХКОЛОНОЧНОГО МАКЕТА (ДЕСКТОП) ===== */
+
+/* По умолчанию (мобильная версия), контейнер - это просто блок */
+.course-layout-container {
+  /* Ничего не меняем, он будет вести себя как обычный div */
+}
+
+/* На мобильных устройствах правая колонка с контентом урока скрыта */
+.lesson-content-area {
+  display: none;
+}
+
+/* Медиа-запрос, который сработает на экранах шире 1024px */
+@media (min-width: 1024px) {
+  /* Превращаем наш контейнер в сетку из двух колонок */
+  .course-layout-container {
+    display: grid;
+    /* Левая колонка 380px, правая занимает все остальное место */
+    grid-template-columns: 380px 1fr; 
+    height: 100vh; /* Растягиваем на всю высоту окна */
+    overflow: hidden; /* Убираем двойной скролл страницы */
+  }
+
+  /* Стилизуем левую колонку (сайдбар) */
+  .lesson-sidebar {
+    border-right: 1px solid var(--tg-theme-secondary-bg-color);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  
+  /* Заголовок курса в сайдбаре остается на месте */
+  .course-simple-header {
+    flex-shrink: 0; /* Не сжиматься */
+  }
+
+  /* А список уроков растягивается и получает свой собственный скролл */
+  .course-sections-list-wrapper {
+    overflow-y: auto;
+    flex-grow: 1;
+  }
+
+  /* Делаем правую колонку видимой на десктопе */
+  .lesson-content-area {
+    display: block;
+    height: 100vh;
+    overflow-y: auto; /* Свой скролл для контента урока */
+    padding: 24px 48px;
+  }
+  
+  /* Стиль для подсветки выбранного урока в списке слева */
+  .lesson-list-item.selected {
+    background-color: var(--tg-theme-secondary-bg-color);
+    border-radius: 8px;
+  }
+  
+  /* Стили для заглушки, когда урок не выбран */
+  .lesson-placeholder {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    color: var(--tg-theme-hint-color);
+    text-align: center;
+    font-size: 18px;
+  }
+
+  /* Стили для lesson-reader-container, когда он в правой колонке */
+  .lesson-reader-container .lesson-title {
+     font-size: 32px;
+     margin-bottom: 24px;
+  }
+}
