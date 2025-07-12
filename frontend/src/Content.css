@@ -294,3 +294,40 @@
     transform: translateY(0);
   }
 }
+
+/* --- СТИЛИ ДЛЯ БЛОКИРОВКИ КУРСА --- */
+
+/* 1. Делаем родительский блок (.course-preview) готовым к позиционированию оверлея */
+.course-preview {
+  position: relative;
+}
+
+/* 2. Затемняем и обесцвечиваем превью заблокированной карточки */
+.course-card.locked .course-preview {
+  filter: grayscale(80%) brightness(0.4);
+}
+
+/* 3. Стили самого оверлея с замком */
+.course-lock-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.2); /* Легкое дополнительное затемнение */
+  display: flex;
+  flex-direction: column; /* Иконка и текст друг под другом */
+  justify-content: center;
+  align-items: center;
+  color: white;
+  pointer-events: none; /* Оверлей не должен мешать курсору */
+}
+
+/* 4. Стили для текста под замком */
+.lock-overlay-text {
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5); /* Тень для лучшей читаемости */
+}
