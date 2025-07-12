@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown'; // <-- Новая зависимость
-import useMediaQuery from '../hooks/useMediaQuery'; // <-- Наш новый хук
+import useMediaQuery from './hooks/useMediaQuery'; // <-- Наш новый хук
 import './CourseOverview.css';
 import './LessonReader.css'; // <-- Подключаем стили читалки, они пригодятся для правой колонки
 
