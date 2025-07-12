@@ -217,20 +217,11 @@ def get_admin_courses_from_db(db) -> List[dict]:
         return []
 
 def get_combined_courses_data(db) -> Dict[str, dict]:
-    """Объединяет курсы из БД (lessons) + курсы из админки"""
-    existing_courses = get_courses_from_db(db)
+    """Возвращает ТОЛЬКО курсы, созданные через админку."""
     admin_courses = get_admin_courses_from_db(db)
     
-    all_courses = {}
-    
-    # Сначала добавляем курсы из админки
-    for course in admin_courses:
-        all_courses[course["id"]] = course
-    
-    # Потом добавляем существующие курсы
-    for course_id, course_data in existing_courses.items():
-        if course_id not in all_courses:
-            all_courses[course_id] = course_data
+    # Преобразуем список в словарь, как ожидает остальной код
+    all_courses = {course["id"]: course for course in admin_courses}
     
     return all_courses
 
