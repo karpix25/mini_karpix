@@ -314,12 +314,20 @@ async def get_courses(user: dict = Depends(get_current_user), db=Depends(get_db_
         if course_meta.get("rank_required", 1) <= user_rank_level:
             
             # Для админ-курсов считаем реальное количество уроков
-            if course_meta.get("admin_course", False):
-                real_course_id = int(course_id.replace("admin_", ""))
-                cur.execute("SELECT COUNT(*) FROM course_lessons WHERE course_id = %s AND is_published = true", (real_course_id,))
-                total_lessons = cur.fetchone()['count']
-                completed_lessons = 0  # TODO: добавить подсчет прогресса
-                progress = 0
+if course_meta.get("admin_course", False):
+    try:
+        real_course_id = int(course_id.replace("admin_", ""))
+    except ValueError:
+        print(f"Invalid admin course ID: {course_id}")
+        total_lessons = 0
+        completed_lessons = 0
+        progress = 0
+        continue  # Пропускаем этот курс
+    
+    cur.execute("SELECT COUNT(*) FROM course_lessons WHERE course_id = %s AND is_published = true", (real_course_id,))
+    total_lessons = cur.fetchone()['count']
+    completed_lessons = 0
+    progress = 0
             else:
                 # Для обычных курсов считаем как раньше
                 cur.execute("SELECT COUNT(*) FROM lessons WHERE course_id = %s", (course_id,))
@@ -372,9 +380,13 @@ async def get_course_detail(course_id: str, user: dict = Depends(get_current_use
         raise HTTPException(status_code=403, detail="Недостаточно прав для доступа к курсу")
     
     # Если это админ-курс, получаем уроки из course_lessons
-    if course_meta.get("admin_course", False):
-        # Извлекаем реальный ID курса из admin_X
+if course_meta.get("admin_course", False):
+    # Извлекаем реальный ID курса из admin_X
+    try:
         real_course_id = int(course_id.replace("admin_", ""))
+    except ValueError:
+        cur.close()
+        raise HTTPException(status_code=400, detail="Invalid admin course ID format")
         
         # Получаем уроки из новой таблицы course_lessons
         cur.execute("""
@@ -494,7 +506,11 @@ async def get_lesson_content(course_id: str, lesson_id: str, user: dict = Depend
     # Если это админ-курс, получаем урок из course_lessons
     if course_meta.get("admin_course", False):
         # Извлекаем ID урока из lesson_X
-        real_lesson_id = int(lesson_id.replace("lesson_", ""))
+try:
+    real_lesson_id = int(lesson_id.replace("lesson_", ""))
+except ValueError:
+    cur.close()
+    raise HTTPException(status_code=400, detail="Invalid lesson ID format")
         
         cur.execute("""
             SELECT title, content, description
