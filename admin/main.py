@@ -646,13 +646,13 @@ def render_course_form(course=None, form_title="Новый курс"):
 def render_lessons_list(course, lessons):
     """Рендер списка уроков курса"""
     if not lessons:
-        lessons_content = """
+        lessons_content = f"""
         <div class="empty-state">
             <h3>📖 Уроки еще не созданы</h3>
             <p>Начните создавать уроки для этого курса</p>
-            <a href="/admin/courses/{course_id}/lessons/new" class="btn">+ Создать первый урок</a>
+            <a href="/admin/courses/{course['id']}/lessons/new" class="btn">+ Создать первый урок</a>
         </div>
-        """.format(course_id=course['id'])
+        """
     else:
         items_html = ""
         for lesson in lessons:
@@ -666,26 +666,35 @@ def render_lessons_list(course, lessons):
             icon = lesson_type_icons.get(lesson['lesson_type'], '📄')
             status = "Опубликован" if lesson['is_published'] else "Черновик"
             
-            items_html += f"""
+            # ИСПРАВЛЕННАЯ ЧАСТЬ - убираем f-строку и используем .format()
+            items_html += """
             <div class="lesson-item">
                 <div style="display: flex; align-items: center;">
                     <div class="drag-handle">≡</div>
                     <div class="lesson-info">
-                        <h3>{icon} {lesson['title']}</h3>
+                        <h3>{icon} {title}</h3>
                         <div class="lesson-meta">
-                            #{lesson['order_index']} • {lesson['duration_minutes']} мин • {status}
+                            #{order_index} • {duration} мин • {status}
                         </div>
                     </div>
                 </div>
                 <div class="lesson-actions">
-                    <a href="/admin/courses/{course['id']}/lessons/{lesson['id']}/edit" 
+                    <a href="/admin/courses/{course_id}/lessons/{lesson_id}/edit" 
                        class="btn btn-small btn-secondary">Изменить</a>
-                    <a href="/admin/courses/{course['id']}/lessons/{lesson['id']}/delete" 
+                    <a href="/admin/courses/{course_id}/lessons/{lesson_id}/delete" 
                        class="btn btn-small btn-danger" 
                        onclick="return confirm('Удалить урок?')">Удалить</a>
                 </div>
             </div>
-            """
+            """.format(
+                icon=icon,
+                title=lesson['title'],
+                order_index=lesson['order_index'],
+                duration=lesson['duration_minutes'],
+                status=status,
+                course_id=course['id'],
+                lesson_id=lesson['id']
+            )
         
         lessons_content = f'<div class="lessons-list">{items_html}</div>'
     
