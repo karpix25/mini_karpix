@@ -301,23 +301,23 @@ LESSONS_LIST_TEMPLATE = """<!DOCTYPE html>
     <title>Уроки курса - {course_name}</title>
     <meta charset="utf-8">
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f8f9fa; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .header h1 { margin: 0; color: #2c3e50; }
-        .breadcrumb { color: #6c757d; margin-bottom: 10px; }
-        .breadcrumb a { color: #007bff; text-decoration: none; }
-        .btn { padding: 12px 24px; background: #007bff; color: white; text-decoration: none; border-radius: 8px; }
-        .btn:hover { background: #0056b3; }
-        .btn-secondary { background: #6c757d; }
-        .btn-danger { background: #dc3545; }
-        .btn-small { padding: 6px 12px; font-size: 12px; }
-        .course-info { background: white; border-radius: 12px; padding: 20px; margin-bottom: 30px; display: flex; align-items: center; gap: 20px; }
-        .course-cover { width: 80px; height: 80px; border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; }
-        .empty-state { text-align: center; padding: 60px 20px; color: #6c757d; background: white; border-radius: 12px; }
-        .lessons-list { background: white; border-radius: 12px; overflow: hidden; }
-        .lesson-item { padding: 20px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
-        .lesson-actions { display: flex; gap: 8px; }
+        body {{ font-family: Arial, sans-serif; margin: 20px; background: #f8f9fa; }}
+        .container {{ max-width: 1200px; margin: 0 auto; }}
+        .header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }}
+        .header h1 {{ margin: 0; color: #2c3e50; }}
+        .breadcrumb {{ color: #6c757d; margin-bottom: 10px; }}
+        .breadcrumb a {{ color: #007bff; text-decoration: none; }}
+        .btn {{ padding: 12px 24px; background: #007bff; color: white; text-decoration: none; border-radius: 8px; }}
+        .btn:hover {{ background: #0056b3; }}
+        .btn-secondary {{ background: #6c757d; }}
+        .btn-danger {{ background: #dc3545; }}
+        .btn-small {{ padding: 6px 12px; font-size: 12px; }}
+        .course-info {{ background: white; border-radius: 12px; padding: 20px; margin-bottom: 30px; display: flex; align-items: center; gap: 20px; }}
+        .course-cover {{ width: 80px; height: 80px; border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; }}
+        .empty-state {{ text-align: center; padding: 60px 20px; color: #6c757d; background: white; border-radius: 12px; }}
+        .lessons-list {{ background: white; border-radius: 12px; overflow: hidden; }}
+        .lesson-item {{ padding: 20px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }}
+        .lesson-actions {{ display: flex; gap: 8px; }}
     </style>
 </head>
 <body>
