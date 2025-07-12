@@ -338,3 +338,79 @@
      margin-bottom: 24px;
   }
 }
+
+/* ===== СТИЛИ ДЛЯ ДВУХКОЛОНОЧНОГО МАКЕТА (ДЕСКТОП) ===== */
+
+/* Изначально правая колонка скрыта (для мобильных) */
+.lesson-content-area {
+  display: none;
+}
+
+/* Медиа-запрос, который сработает на экранах шире 1024px */
+@media (min-width: 1024px) {
+  /* 1. Превращаем контейнер в сетку из двух колонок */
+  .course-layout-container {
+    display: grid;
+    /* Левая колонка 380px, правая занимает все остальное место */
+    grid-template-columns: 380px 1fr; 
+    height: 100vh; /* Растягиваем на всю высоту окна */
+    overflow: hidden; /* Убираем двойной скролл страницы */
+  }
+
+  /* 2. Стилизуем левую колонку (сайдбар), чтобы она была статичной */
+  .lesson-sidebar {
+    border-right: 1px solid var(--tg-theme-secondary-bg-color);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  
+  .course-simple-header {
+    flex-shrink: 0; /* Заголовок не должен сжиматься */
+  }
+
+  /* 3. Список уроков растягивается и получает свой собственный скролл */
+  .course-sections-list-wrapper {
+    overflow-y: auto; /* Вертикальный скролл */
+    flex-grow: 1; /* Занять все доступное место */
+  }
+
+  /* 4. Делаем правую колонку видимой и добавляем ей свой скролл */
+  .lesson-content-area {
+    display: block;
+    height: 100vh;
+    overflow-y: auto; /* Свой скролл для контента урока */
+    padding: 24px 48px;
+  }
+  
+  /* 5. Стиль для подсветки выбранного урока в списке слева */
+  .lesson-list-item.selected {
+    background-color: var(--tg-theme-secondary-bg-color);
+    font-weight: 700;
+    border-radius: 8px;
+    margin: 4px 8px; /* Добавляем отступы для красоты */
+    padding: 12px 12px;
+  }
+  
+  /* 6. Стили для заглушки, когда урок не выбран */
+  .lesson-placeholder {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    color: var(--tg-theme-hint-color);
+    text-align: center;
+    font-size: 18px;
+  }
+
+  /* Доп. стили для заголовка и контента в правой колонке */
+  .lesson-reader-container .lesson-title {
+     font-size: 32px;
+     margin-bottom: 24px;
+  }
+
+  .lesson-reader-container .markdown-content {
+      line-height: 1.7;
+      font-size: 16px;
+  }
+}
