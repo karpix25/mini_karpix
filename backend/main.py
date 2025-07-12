@@ -313,21 +313,18 @@ async def get_courses(user: dict = Depends(get_current_user), db=Depends(get_db_
     for course_id, course_meta in courses_data.items():
         if course_meta.get("rank_required", 1) <= user_rank_level:
             
-            # Для админ-курсов считаем реальное количество уроков
-if course_meta.get("admin_course", False):
-    try:
-        real_course_id = int(course_id.replace("admin_", ""))
-    except ValueError:
-        print(f"Invalid admin course ID: {course_id}")
-        total_lessons = 0
-        completed_lessons = 0
-        progress = 0
-        continue  # Пропускаем этот курс
-    
-    cur.execute("SELECT COUNT(*) FROM course_lessons WHERE course_id = %s AND is_published = true", (real_course_id,))
-    total_lessons = cur.fetchone()['count']
-    completed_lessons = 0
-    progress = 0
+            # ИСПРАВЛЕНИЕ: Блок `if/else` ниже был сдвинут влево. Теперь он находится внутри `if course_meta...`
+            if course_meta.get("admin_course", False):
+                try:
+                    real_course_id = int(course_id.replace("admin_", ""))
+                except ValueError:
+                    print(f"Invalid admin course ID: {course_id}")
+                    continue  # Пропускаем этот курс
+                
+                cur.execute("SELECT COUNT(*) FROM course_lessons WHERE course_id = %s AND is_published = true", (real_course_id,))
+                total_lessons = cur.fetchone()['count']
+                completed_lessons = 0 # TODO: Добавить логику подсчета пройденных уроков админ-курса
+                progress = 0 # TODO: Добавить логику подсчета прогресса
             else:
                 # Для обычных курсов считаем как раньше
                 cur.execute("SELECT COUNT(*) FROM lessons WHERE course_id = %s", (course_id,))
@@ -379,16 +376,14 @@ async def get_course_detail(course_id: str, user: dict = Depends(get_current_use
         cur.close()
         raise HTTPException(status_code=403, detail="Недостаточно прав для доступа к курсу")
     
-    # Если это админ-курс, получаем уроки из course_lessons
-if course_meta.get("admin_course", False):
-    # Извлекаем реальный ID курса из admin_X
-    try:
-        real_course_id = int(course_id.replace("admin_", ""))
-    except ValueError:
-        cur.close()
-        raise HTTPException(status_code=400, detail="Invalid admin course ID format")
-        
-        # Получаем уроки из новой таблицы course_lessons
+    # ИСПРАВЛЕНИЕ: Этот блок `if` был сдвинут влево. Теперь он находится на правильном уровне отступа.
+    if course_meta.get("admin_course", False):
+        try:
+            real_course_id = int(course_id.replace("admin_", ""))
+        except ValueError:
+            cur.close()
+            raise HTTPException(status_code=400, detail="Invalid admin course ID format")
+            
         cur.execute("""
             SELECT id, title, description, lesson_type, order_index, duration_minutes
             FROM course_lessons 
@@ -398,7 +393,6 @@ if course_meta.get("admin_course", False):
         admin_lessons = cur.fetchall()
         
         if not admin_lessons:
-            # Если нет уроков, показываем заглушку
             cur.close()
             return CourseDetail(
                 id=course_id,
@@ -417,19 +411,14 @@ if course_meta.get("admin_course", False):
                 progress=0
             )
         
-        # Формируем секции из админских уроков
-        sections = [{
-            "id": "main_section",
-            "title": "Основные уроки",
-            "lessons": []
-        }]
+        sections = [{"id": "main_section", "title": "Основные уроки", "lessons": []}]
         
         for lesson in admin_lessons:
             sections[0]["lessons"].append({
                 "id": f"lesson_{lesson['id']}",
                 "title": lesson['title'],
                 "completed": False,
-                "locked": False  # Добавляем поле что урок НЕ заблокирован
+                "locked": False
             })
         
         cur.close()
@@ -443,16 +432,13 @@ if course_meta.get("admin_course", False):
         )
     
     # Для обычных курсов используем существующую логику
-    # Проверяем, существует ли курс в lessons
     cur.execute("SELECT COUNT(*) FROM lessons WHERE course_id = %s", (course_id,))
     if cur.fetchone()['count'] == 0:
         cur.close()
         raise HTTPException(status_code=404, detail="Курс не найден")
     
-    # Получаем секции и уроки
     sections = get_course_sections_from_db(db, course_id)
     
-    # Получаем прогресс пользователя
     cur.execute("""
         SELECT lesson_id FROM user_lesson_progress
         WHERE user_id = %s AND course_id = %s;
@@ -460,7 +446,6 @@ if course_meta.get("admin_course", False):
     completed_lesson_rows = cur.fetchall()
     completed_lesson_ids = {row['lesson_id'] for row in completed_lesson_rows}
     
-    # Отмечаем завершенные уроки
     total_lessons = 0
     for section in sections:
         total_lessons += len(section['lessons'])
@@ -492,7 +477,6 @@ async def get_lesson_content(course_id: str, lesson_id: str, user: dict = Depend
     points = (db_user['message_count'] * 2) if db_user and db_user['message_count'] is not None else 0
     user_rank_level = get_rank_level(points)
     
-    # Проверяем права доступа к курсу
     courses_data = get_combined_courses_data(db)
     if course_id not in courses_data:
         cur.close()
@@ -503,14 +487,13 @@ async def get_lesson_content(course_id: str, lesson_id: str, user: dict = Depend
         cur.close()
         raise HTTPException(status_code=403, detail="Недостаточно прав")
     
-    # Если это админ-курс, получаем урок из course_lessons
+    # ИСПРАВЛЕНИЕ: Этот блок `if` и вложенный в него `try` были сдвинуты влево.
     if course_meta.get("admin_course", False):
-        # Извлекаем ID урока из lesson_X
-try:
-    real_lesson_id = int(lesson_id.replace("lesson_", ""))
-except ValueError:
-    cur.close()
-    raise HTTPException(status_code=400, detail="Invalid lesson ID format")
+        try:
+            real_lesson_id = int(lesson_id.replace("lesson_", ""))
+        except ValueError:
+            cur.close()
+            raise HTTPException(status_code=400, detail="Invalid lesson ID format")
         
         cur.execute("""
             SELECT title, content, description
@@ -574,7 +557,9 @@ async def mark_lesson_as_complete(
         db.commit()
         cur.close()
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Database error")
+        db.rollback() # Рекомендуется откатывать транзакцию при ошибке
+        cur.close()
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
     return CompletionStatus(status="completed")
 
