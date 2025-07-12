@@ -1,21 +1,23 @@
 /* Основной контейнер */
 .content-container {
-  padding: 16px;
-  background-color: var(--tg-theme-secondary-bg-color, #f0f2f5);
+  padding: 20px;
+  background-color: var(--tg-theme-secondary-bg-color, #f8f7f5);
   min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   color: var(--tg-theme-text-color, #333333);
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 /* Заголовок секции */
 .content-header {
-  margin-bottom: 24px;
+  margin-bottom: 32px;
   text-align: center;
 }
 
 .content-header h2 {
-  margin: 0 0 8px 0;
-  font-size: 24px;
+  margin: 0 0 12px 0;
+  font-size: 28px;
   font-weight: 700;
   color: var(--tg-theme-text-color, #1a1a1a);
 }
@@ -24,15 +26,17 @@
   margin: 0;
   font-size: 16px;
   color: var(--tg-theme-hint-color, #6c757d);
-  line-height: 1.4;
+  line-height: 1.5;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
-/* Сетка курсов */
+/* ФИКСИРОВАННАЯ СЕТКА КУРСОВ - 3 КОЛОНКИ НА ДЕСКТОПЕ */
 .courses-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-top: 24px;
+  grid-template-columns: repeat(3, 1fr); /* СТРОГО 3 колонки */
+  gap: 24px;
+  margin-top: 32px;
 }
 
 /* Ссылка карточки */
@@ -40,32 +44,38 @@
   text-decoration: none;
   color: inherit;
   display: block;
+  border-radius: 12px;
+  transition: all 0.2s ease;
 }
 
-/* Карточка курса */
+/* НОВАЯ АНИМАЦИЯ: только тень, без движения */
+.course-card-link:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+/* Карточка курса в стиле Skool */
 .course-card {
   background: var(--tg-theme-bg-color, #ffffff);
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
   cursor: pointer;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  height: 100%; /* Все карточки одинаковой высоты */
+  display: flex;
+  flex-direction: column;
 }
 
-.course-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-/* Превью секция */
+/* Превью секция как у Skool */
 .course-preview {
-  height: 160px;
+  height: 180px; /* Увеличили высоту как у Skool */
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  flex-shrink: 0; /* Не сжимается */
 }
 
 .course-preview-content {
@@ -76,58 +86,66 @@
   height: 100%;
   position: relative;
   width: 100%;
+  z-index: 1;
 }
 
 .course-icon {
-  font-size: 48px;
-  margin-bottom: 8px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  font-size: 56px; /* Увеличили иконку */
+  margin-bottom: 12px;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
 }
 
 .rank-badge {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+  top: 16px;
+  right: 16px;
+  padding: 8px 14px;
+  border-radius: 24px;
+  font-size: 11px;
+  font-weight: 700;
   color: white;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.8px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+  z-index: 2;
 }
 
 /* Контент карточки */
 .course-content {
-  padding: 20px;
+  padding: 24px;
+  flex-grow: 1; /* Занимает оставшееся место */
+  display: flex;
+  flex-direction: column;
 }
 
 .course-title {
-  margin: 0 0 8px 0;
+  margin: 0 0 12px 0;
   font-size: 18px;
   font-weight: 600;
   color: var(--tg-theme-text-color, #1a1a1a);
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.course-description {
-  margin: 0 0 16px 0;
-  font-size: 14px;
-  color: var(--tg-theme-hint-color, #6c757d);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  min-height: 50px; /* Фиксированная высота для выравнивания */
 }
 
-/* Прогресс секция */
+.course-description {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #6c757d);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex-grow: 1; /* Занимает доступное место */
+}
+
+/* Прогресс секция как у Skool */
 .course-progress {
+  margin-top: auto; /* Прижимает к низу */
   margin-bottom: 16px;
 }
 
@@ -135,11 +153,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .progress-text {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--tg-theme-text-color, #333);
 }
@@ -149,17 +167,18 @@
   color: var(--tg-theme-hint-color, #6c757d);
 }
 
+/* Прогресс-бар в стиле Skool */
 .progress-bar {
-  height: 6px;
+  height: 4px; /* Тоньше как у Skool */
   background-color: var(--tg-theme-secondary-bg-color, #e9ecef);
-  border-radius: 3px;
+  border-radius: 2px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--tg-theme-link-color, #007bff) 0%, var(--tg-theme-button-color, #0056b3) 100%);
-  border-radius: 3px;
+  border-radius: 2px;
   transition: width 0.3s ease;
 }
 
@@ -169,6 +188,7 @@
   gap: 16px;
   font-size: 12px;
   color: var(--tg-theme-hint-color, #6c757d);
+  margin-top: auto;
 }
 
 .course-difficulty,
@@ -182,11 +202,50 @@
   font-size: 14px;
 }
 
+/* --- СТИЛИ ДЛЯ БЛОКИРОВКИ КУРСА (в стиле Skool) --- */
+
+/* Затемнение заблокированной карточки */
+.course-card.locked .course-preview {
+  filter: grayscale(60%) brightness(0.5);
+}
+
+/* Оверлей с замком в стиле Skool */
+.course-lock-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.lock-overlay-text {
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Заблокированные карточки не должны иметь hover эффект */
+.course-card.locked .course-card-link:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  cursor: not-allowed;
+}
+
 /* Состояния загрузки и ошибки */
 .loading-state,
 .error-state {
   text-align: center;
-  padding: 60px 20px;
+  padding: 80px 20px;
+  grid-column: 1 / -1; /* Занимает всю ширину сетки */
 }
 
 .loader {
@@ -219,21 +278,22 @@
 /* Пустое состояние */
 .empty-state {
   text-align: center;
-  padding: 60px 20px;
+  padding: 80px 20px;
   background: var(--tg-theme-bg-color, #ffffff);
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  grid-column: 1 / -1; /* Занимает всю ширину сетки */
 }
 
 .empty-icon {
   font-size: 64px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
   opacity: 0.6;
 }
 
 .empty-state h3 {
-  margin: 0 0 8px 0;
-  font-size: 20px;
+  margin: 0 0 12px 0;
+  font-size: 22px;
   font-weight: 600;
   color: var(--tg-theme-text-color, #1a1a1a);
 }
@@ -242,52 +302,85 @@
   margin: 0;
   font-size: 16px;
   color: var(--tg-theme-hint-color, #6c757d);
-  line-height: 1.4;
-  max-width: 300px;
+  line-height: 1.5;
+  max-width: 400px;
   margin: 0 auto;
 }
 
-/* Адаптивность */
+/* АДАПТИВНОСТЬ ДЛЯ ПЛАНШЕТОВ */
+@media (max-width: 1024px) {
+  .courses-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 колонки на планшетах */
+    gap: 20px;
+  }
+  
+  .content-container {
+    padding: 16px;
+  }
+}
+
+/* АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ - 1 КОЛОНКА */
 @media (max-width: 768px) {
   .content-container {
     padding: 12px;
   }
   
   .courses-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; /* СТРОГО 1 колонка на мобильных */
     gap: 16px;
+    margin-top: 24px;
   }
   
   .course-preview {
-    height: 140px;
+    height: 160px; /* Немного меньше на мобильных */
   }
   
   .course-icon {
-    font-size: 40px;
+    font-size: 48px;
   }
   
   .course-content {
-    padding: 16px;
+    padding: 20px;
   }
   
   .content-header h2 {
-    font-size: 20px;
+    font-size: 24px;
   }
   
   .content-subtitle {
     font-size: 14px;
   }
+  
+  .course-title {
+    font-size: 16px;
+    min-height: 44px; /* Меньше на мобильных */
+  }
 }
 
-/* Анимации */
+/* АДАПТИВНОСТЬ ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
+@media (max-width: 480px) {
+  .content-container {
+    padding: 8px;
+  }
+  
+  .courses-grid {
+    gap: 12px;
+  }
+  
+  .content-header {
+    margin-bottom: 20px;
+  }
+}
+
+/* Плавная анимация появления карточек */
 .course-card {
-  animation: fadeInUp 0.4s ease-out;
+  animation: fadeInUp 0.3s ease-out;
 }
 
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -295,39 +388,10 @@
   }
 }
 
-/* --- СТИЛИ ДЛЯ БЛОКИРОВКИ КУРСА --- */
-
-/* 1. Делаем родительский блок (.course-preview) готовым к позиционированию оверлея */
-.course-preview {
-  position: relative;
-}
-
-/* 2. Затемняем и обесцвечиваем превью заблокированной карточки */
-.course-card.locked .course-preview {
-  filter: grayscale(80%) brightness(0.4);
-}
-
-/* 3. Стили самого оверлея с замком */
-.course-lock-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.2); /* Легкое дополнительное затемнение */
-  display: flex;
-  flex-direction: column; /* Иконка и текст друг под другом */
-  justify-content: center;
-  align-items: center;
-  color: white;
-  pointer-events: none; /* Оверлей не должен мешать курсору */
-}
-
-/* 4. Стили для текста под замком */
-.lock-overlay-text {
-  margin-top: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5); /* Тень для лучшей читаемости */
-}
+/* Анимация для появления карточек с задержкой */
+.course-card:nth-child(1) { animation-delay: 0.05s; }
+.course-card:nth-child(2) { animation-delay: 0.1s; }
+.course-card:nth-child(3) { animation-delay: 0.15s; }
+.course-card:nth-child(4) { animation-delay: 0.2s; }
+.course-card:nth-child(5) { animation-delay: 0.25s; }
+.course-card:nth-child(6) { animation-delay: 0.3s; }
