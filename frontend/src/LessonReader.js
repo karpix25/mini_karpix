@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm';
 // import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 // import { coldarkDark } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Пример темной темы для кода
 import './LessonReader.css';
+import LessonContent from './LessonContent';
 
 const tg = window.Telegram?.WebApp;
 const BACKEND_URL = "https://miniback.karpix.com";
@@ -158,89 +159,22 @@ function LessonReader() {
     );
   }
 
-  // Для рендеринга ReactMarkdown с подсветкой синтаксиса (если решили добавить)
-  // const components = {
-  //   code({node, inline, className, children, ...props}) {
-  //     const match = /language-(\w+)/.exec(className || '')
-  //     return !inline && match ? (
-  //       <SyntaxHighlighter
-  //         style={coldarkDark} // Используйте подходящую тему
-  //         language={match[1]}
-  //         PreTag="div"
-  //         {...props}
-  //       >
-  //         {String(children).replace(/\n$/, '')}
-  //       </SyntaxHighlighter>
-  //     ) : (
-  //       <code className={className} {...props}>
-  //         {children}
-  //       </code>
-  //     )
-  //   }
-  // }
+  // Навигационные обработчики для передачи в LessonContent
+  const navHandlers = {
+    menu: () => navigate(`/course/${courseId}`),
+    prev: prevLesson ? () => navigate(`/course/${courseId}/lesson/${prevLesson.id}`) : undefined,
+    next: nextLesson ? () => navigate(`/course/${courseId}/lesson/${nextLesson.id}`) : undefined,
+  };
 
   return (
-    <div className="lesson-reader-container">
-      {/* Верхний хедер с заголовком урока и кнопками навигации */}
-      <div className="lesson-top-header">
-        <button className="nav-text-button" onClick={() => navigate(`/course/${courseId}`)}>
-          ← Menu
-        </button>
-        <h1 className="lesson-top-title">{lesson.title}</h1>
-        <button className="nav-text-button" onClick={() => nextLesson && navigate(`/course/${courseId}/lesson/${nextLesson.id}`)} disabled={!nextLesson}>
-          Next →
-        </button>
-        {/* Кнопка завершения урока может быть здесь, или внизу, или отдельно */}
-        {/* <button 
-            className={`complete-button ${isCompleted ? 'completed' : ''}`}
-            onClick={handleMarkComplete}
-            title={isCompleted ? "Урок завершен" : "Отметить как завершенный"}
-          >
-            {isCompleted ? (
-              <div className="completion-check">✓</div>
-            ) : (
-              <div className="completion-circle"></div>
-            )}
-        </button> */}
-      </div>
-
-      {/* Основной контент урока */}
-      <div className="lesson-main-content-wrapper"> {/* Обертка для основного контента и паддингов */}
-        <ReactMarkdown remarkPlugins={[remarkGfm]} /* components={components} */>
-          {lesson.content || '# Урок\n\nСодержимое урока загружается...'}
-        </ReactMarkdown>
-      </div>
-
-      {/* Нижняя навигация между уроками */}
-      <div className="lesson-bottom-navigation">
-          {prevLesson && (
-            <button 
-              className="bottom-nav-button"
-              onClick={() => navigate(`/course/${courseId}/lesson/${prevLesson.id}`)}
-            >
-              ← Previous Lesson
-            </button>
-          )}
-          
-          {/* Кнопка "Mark Complete" внизу, рядом с навигацией, если удобно */}
-          <button 
-              className={`bottom-complete-button ${isCompleted ? 'completed' : ''}`}
-              onClick={handleMarkComplete}
-              title={isCompleted ? "Урок завершен" : "Отметить как завершенный"}
-            >
-              {isCompleted ? "Завершено ✓" : "Отметить как завершенный"}
-          </button>
-
-          {nextLesson && (
-            <button 
-              className="bottom-nav-button"
-              onClick={() => navigate(`/course/${courseId}/lesson/${nextLesson.id}`)}
-            >
-              Next Lesson →
-            </button>
-          )}
-      </div>
-    </div>
+    <LessonContent
+      lesson={lesson}
+      isCompleted={isCompleted}
+      onMarkComplete={handleMarkComplete}
+      prevLesson={prevLesson}
+      nextLesson={nextLesson}
+      onNavigate={navHandlers}
+    />
   );
 }
 

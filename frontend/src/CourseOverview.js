@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './CourseOverview.css';
+import LessonContent from './LessonContent';
 
 const tg = window.Telegram?.WebApp;
 const BACKEND_URL = "https://miniback.karpix.com";
@@ -44,6 +45,10 @@ function CourseOverview() {
   const [userRankLevel, setUserRankLevel] = useState(1);
   const [expandedSections, setExpandedSections] = useState({});
   const [activeLessonId, setActiveLessonId] = useState(null);
+  const [lessonData, setLessonData] = useState(null); // Для десктопа: содержимое выбранного урока
+  const [lessonLoading, setLessonLoading] = useState(false);
+  const [lessonError, setLessonError] = useState(null);
+  const [lessonCompleted, setLessonCompleted] = useState(false);
 
   // Настройка Telegram BackButton
   useEffect(() => {
@@ -111,6 +116,64 @@ function CourseOverview() {
       setExpandedSections(initial);
     }
   }, [course]);
+
+  // Загрузка содержимого урока для десктопа
+  useEffect(() => {
+    if (window.innerWidth >= 1024 && activeLessonId && courseId) {
+      const fetchLesson = async () => {
+        setLessonLoading(true);
+        setLessonError(null);
+        try {
+          const headers = tg?.initData ? { 'X-Init-Data': tg.initData } : {};
+          const resp = await fetch(`${BACKEND_URL}/api/courses/${courseId}/lessons/${activeLessonId}`, { headers });
+          if (!resp.ok) throw new Error('Ошибка загрузки урока');
+          const data = await resp.json();
+          setLessonData(data);
+          // Проверяем статус завершения урока
+          const currentLessonInCourse = course.sections
+            ?.flatMap(section => section.lessons)
+            ?.find(l => l.id === activeLessonId);
+          setLessonCompleted(currentLessonInCourse?.completed || false);
+        } catch (e) {
+          setLessonError(e.message);
+        } finally {
+          setLessonLoading(false);
+        }
+      };
+      fetchLesson();
+    }
+  }, [activeLessonId, courseId, course]);
+
+  // Навигация между уроками (десктоп)
+  const getAllLessons = () => {
+    if (!course?.sections) return [];
+    const allLessons = [];
+    course.sections.forEach(section => {
+      section.lessons.forEach(lessonItem => {
+        allLessons.push({ ...lessonItem, sectionId: section.id });
+      });
+    });
+    allLessons.sort((a, b) => a.sort_order - b.sort_order);
+    return allLessons;
+  };
+  const allLessons = getAllLessons();
+  const currentIndex = allLessons.findIndex(l => l.id === activeLessonId);
+  const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
+  const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
+
+  const handleMarkComplete = async () => {
+    if (!tg?.initData || !activeLessonId) return;
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/courses/${courseId}/lessons/${activeLessonId}/complete`, {
+        method: 'POST',
+        headers: { 'X-Init-Data': tg.initData }
+      });
+      if (response.ok) {
+        setLessonCompleted(!lessonCompleted);
+        if (tg) tg.HapticFeedback.impactOccurred('light');
+      }
+    } catch {}
+  };
 
   const handleSectionToggle = (sectionId) => {
     setExpandedSections((prev) => ({ ...prev, [sectionId]: !prev[sectionId] }));
@@ -190,9 +253,23 @@ function CourseOverview() {
             </div>
           </div>
           <div className="lesson-content-area">
-            {activeLessonId ? (
-              // Здесь будет компонент для отображения содержимого урока (можно внедрить LessonReader как компонент)
-              <div className="lesson-placeholder">Контент урока (реализовать интеграцию)</div>
+            {lessonLoading ? (
+              <div className="lesson-placeholder">Загрузка урока...</div>
+            ) : lessonError ? (
+              <div className="lesson-placeholder">{lessonError}</div>
+            ) : activeLessonId && lessonData ? (
+              <LessonContent
+                lesson={lessonData}
+                isCompleted={lessonCompleted}
+                onMarkComplete={handleMarkComplete}
+                prevLesson={prevLesson}
+                nextLesson={nextLesson}
+                onNavigate={{
+                  menu: () => setActiveLessonId(null),
+                  prev: prevLesson ? () => setActiveLessonId(prevLesson.id) : undefined,
+                  next: nextLesson ? () => setActiveLessonId(nextLesson.id) : undefined,
+                }}
+              />
             ) : (
               <div className="lesson-placeholder">Выберите урок слева</div>
             )}
