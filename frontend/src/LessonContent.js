@@ -25,7 +25,7 @@ function LessonContent({ lesson, isCompleted, onMarkComplete, prevLesson, nextLe
       </div>
 
       {/* Основной контент урока */}
-      <div className="lesson-main-content-wrapper">
+      <div className="lesson-main-content-wrapper markdown-content">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
           {lesson.content || '# Урок\n\nСодержимое урока загружается...'}
         </ReactMarkdown>
