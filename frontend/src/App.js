@@ -7,7 +7,7 @@ function App() {
       <div className="App">
         <div className="content">
           <Routes>
-            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/admin-panel" element={<AdminPanel />} />
           </Routes>
         </div>
         {/* ... навигация ... */}
