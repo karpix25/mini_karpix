@@ -1,0 +1,36 @@
+/* src/CourseLessonContent.css */
+.lesson-content-container {
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+@media (max-width: 1023px) {
+  .lesson-content-container {
+    padding: 16px;
+  }
+}
+
+.lesson-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+.lesson-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--skool-text-color, #1A1A1A);
+}
+.completion-button {
+    background: none; border: 2px solid var(--skool-icon-color, #B4B2AF);
+    border-radius: 50%; width: 32px; height: 32px; padding: 4px;
+    cursor: pointer; color: var(--skool-icon-color, #B4B2AF);
+}
+.completion-button.completed {
+    border-color: #34C759; color: #34C759;
+}
+.lesson-markdown-content {
+    color: var(--skool-text-color); line-height: 1.7; font-size: 16px;
+}
+/* ... ваши детальные стили для markdown h2, p, code ... */
