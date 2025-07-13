@@ -1,11 +1,11 @@
+// src/App.js
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
 import './App.css'; 
 import Profile from './Profile';
 import Content from './Content';
-import CourseOverview from './CourseOverview';
-import LessonReader from './LessonReader';
-import ArticleReader from './ArticleReader'; 
+import CourseOverview from './CourseOverview'; // Наш главный компонент для этой задачи
 
 function App() {
   return (
@@ -13,35 +13,25 @@ function App() {
       <div className="App">
         <div className="content">
           <Routes>
-            {/* Главная страница, которая теперь включает Профиль и Лидерборд */}
-            <Route path="/" element={<Profile />} /> 
-            {/* Этот маршрут теперь можно удалить, так как он дублирует "/" */}
-            {/* <Route path="/leaderboard" element={<Profile />} /> */}
-            
+            <Route path="/" element={<Profile />} />
             <Route path="/content" element={<Content />} />
             
+            {/* Этот маршрут ведет на страницу курса, где отображается сайдбар + контент */}
             <Route path="/course/:courseId" element={<CourseOverview />} />
-            <Route path="/course/:courseId/lesson/:lessonId" element={<LessonReader />} />
-            
-            <Route path="/article/:articleId" element={<ArticleReader />} />
+            <Route path="/course/:courseId/lesson/:lessonId" element={<CourseOverview />} />
+
+            {/* <Route path="/article/:articleId" element={<ArticleReader />} /> */}
           </Routes>
         </div>
         
-        {/* Нижняя навигация */}
-        <div className="nav-tabs">
+        <nav className="nav-tabs">
             <NavLink to="/" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
                 Профиль
             </NavLink>
-            {/* УДАЛЯЕМ ЭТУ Вкладку Лидеры */}
-            {/* 
-            <NavLink to="/leaderboard" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
-                Лидеры
-            </NavLink>
-            */}
             <NavLink to="/content" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
                 Контент
             </NavLink>
-        </div>
+        </nav>
       </div>
     </Router>
   );
