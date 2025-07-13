@@ -1,0 +1,56 @@
+/* src/CourseLessonList.css */
+
+.lesson-placeholder {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  text-align: center;
+  color: var(--skool-text-secondary);
+}
+.lesson-placeholder h2 {
+  color: var(--skool-text-color);
+}
+
+.mobile-lesson-list {
+  padding: 16px;
+}
+
+.mobile-list-header {
+  margin-bottom: 24px;
+}
+.mobile-list-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--tg-theme-text-color);
+  margin: 0;
+}
+
+.mobile-section {
+  margin-bottom: 24px;
+}
+.mobile-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--tg-theme-hint-color);
+  margin: 0 0 8px 0;
+}
+.mobile-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  background-color: var(--tg-theme-secondary-bg-color);
+  border-radius: 8px;
+}
+.mobile-lesson-link {
+  display: block;
+  padding: 16px;
+  color: var(--tg-theme-text-color);
+  text-decoration: none;
+  border-bottom: 1px solid var(--tg-theme-hint-color);
+}
+.mobile-section li:last-child .mobile-lesson-link {
+  border-bottom: none;
+}
