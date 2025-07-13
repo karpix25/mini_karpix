@@ -84,6 +84,7 @@
   transition: background 0.15s, color 0.15s;
   display: flex;
   align-items: center;
+  text-align: left; /* Явное выравнивание по левому краю */
 }
 .skool-lesson-item.active {
   background: #fff7d6;
@@ -101,6 +102,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left; /* Явное выравнивание по левому краю */
 }
 
 .skool-content {
