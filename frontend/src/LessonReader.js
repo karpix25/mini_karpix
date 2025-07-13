@@ -174,6 +174,7 @@ function LessonReader() {
       prevLesson={prevLesson}
       nextLesson={nextLesson}
       onNavigate={navHandlers}
+      course={course}
     />
   );
 }

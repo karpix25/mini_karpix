@@ -680,3 +680,79 @@
     font-size: 1.15rem;
   }
 }
+
+.minimal-mobile-lesson {
+  background: var(--tg-theme-bg-color, #fff);
+  padding: 0 0 32px 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.lesson-course-title-minimal {
+  color: var(--tg-theme-hint-color, #888);
+  font-size: 0.98rem;
+  font-weight: 500;
+  margin: 18px 0 0 0;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+.lesson-title-minimal {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 10px 0 16px 0;
+  text-align: center;
+  color: var(--tg-theme-text-color, #222);
+}
+.lesson-image-minimal {
+  display: block;
+  max-width: 92vw;
+  max-height: 220px;
+  margin: 0 auto 18px auto;
+  border-radius: 16px;
+  object-fit: cover;
+  box-shadow: none;
+}
+.lesson-nav-minimal {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.nav-text-btn-minimal {
+  background: none;
+  border: none;
+  color: var(--tg-theme-link-color, #007bff);
+  font-size: 1.01rem;
+  font-weight: 600;
+  padding: 0 8px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.nav-text-btn-minimal:active {
+  background: var(--tg-theme-secondary-bg-color, #f7f7f7);
+}
+.lesson-content-minimal {
+  padding: 0 16px;
+  font-size: 1rem;
+  color: var(--tg-theme-text-color, #222);
+}
+@media (max-width: 768px) {
+  .minimal-mobile-lesson {
+    padding: 0 0 24px 0;
+  }
+  .lesson-title-minimal {
+    font-size: 1.12rem;
+    margin: 8px 0 12px 0;
+  }
+  .lesson-image-minimal {
+    max-width: 98vw;
+    max-height: 160px;
+    border-radius: 12px;
+  }
+  .lesson-content-minimal {
+    padding: 0 8px;
+    font-size: 0.98rem;
+  }
+}
