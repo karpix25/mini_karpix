@@ -1,7 +1,9 @@
 // src/CourseLessonList.js
+
 import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { CourseContext } from './CourseLayout';
+import useMediaQuery from './hooks/useMediaQuery'; //  <-- ВОТ ИСПРАВЛЕНИЕ: ДОБАВЛЕН ЭТОТ ИМПОРТ
 import './CourseLessonList.css';
 
 function CourseLessonList() {
