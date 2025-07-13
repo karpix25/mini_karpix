@@ -116,6 +116,17 @@
     transform: rotate(180deg); 
 }
 
+/* --- Toggle стрелка --- */
+.toggle-icon-wrapper {
+  margin-left: 8px;
+  font-size: 16px;
+  color: var(--tg-theme-hint-color, #6C757D);
+  transition: transform 0.2s;
+}
+.toggle-icon-wrapper.expanded {
+  transform: rotate(180deg);
+}
+
 /* Стиль для списка уроков внутри секции */
 .section-lessons-list { 
   list-style: none; /* Убираем дефолтные маркеры */
@@ -166,6 +177,14 @@
 
 .lesson-item-title {
   flex-grow: 1; 
+}
+
+/* --- Выделение активного урока --- */
+.lesson-list-item.selected {
+  background: #fff7d6;
+  border-radius: 8px;
+  font-weight: 700;
+  color: #1a1a1a;
 }
 
 /* ===== ОБЩИЕ СОСТОЯНИЯ ЗАГРУЗКИ И ОШИБКИ ===== */
@@ -385,10 +404,11 @@
   
   /* 5. Стиль для подсветки выбранного урока в списке слева */
   .lesson-list-item.selected {
-    background-color: var(--tg-theme-secondary-bg-color);
-    font-weight: 700;
+    background: #fff7d6;
     border-radius: 8px;
-    margin: 4px 8px; /* Добавляем отступы для красоты */
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 4px 8px;
     padding: 12px 12px;
   }
   

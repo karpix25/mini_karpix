@@ -5,34 +5,32 @@ import './CourseOverview.css';
 const tg = window.Telegram?.WebApp;
 const BACKEND_URL = "https://miniback.karpix.com";
 
-// Компонент раздела без явного toggle (если разделы всегда развернуты)
-const CourseSection = ({ section, onLessonClick }) => {
+// Компонент секции с toggle
+const CourseSection = ({ section, onLessonClick, expanded, onToggle, activeLessonId }) => {
   return (
-    <div className="course-section-group"> {/* Новая обертка для секции */}
-      {/* Заголовок секции, если она нужна (на скриншоте не виден) */}
-      {/* Можно добавить <h3 className="section-title">{section.title}</h3> если секции нужны */}
-      
-      <ol className="section-lessons-list"> {/* Список уроков в виде нумерованного списка */}
-        {section.lessons.map((lesson) => {
-          // Логика разблокировки должна быть на бэкенде или в userData.is_active
-          // Для простоты пока оставим isUnlocked = true
-          const isUnlocked = true; 
-          return (
-            <li 
-              key={lesson.id}
-              className={`lesson-list-item ${!isUnlocked ? 'locked' : ''} ${lesson.completed ? 'completed' : ''}`}
-              onClick={() => isUnlocked && onLessonClick(lesson.id)}
-            >
-              {/* Если нужны иконки, то здесь, но на скриншоте их нет */}
-              {/* <span className="lesson-item-icon">
-                {!isUnlocked ? '🔒' : lesson.completed ? '✅' : '📄'}
-              </span> */}
-              <span className="lesson-item-title">{lesson.title}</span>
-              {/* <span className="lesson-duration">5 мин</span> */} {/* Убрано, т.к. на скриншоте нет */}
-            </li>
-          );
-        })}
-      </ol>
+    <div className="course-section-group">
+      {/* Заголовок секции с toggle */}
+      <div className="course-section-header" onClick={onToggle}>
+        <span className="course-section-title-text">{section.title}</span>
+        <span className={`toggle-icon-wrapper${expanded ? ' expanded' : ''}`}>▼</span>
+      </div>
+      {expanded && (
+        <ol className="section-lessons-list">
+          {section.lessons.map((lesson) => {
+            const isUnlocked = true; // TODO: логика разблокировки
+            const isActive = lesson.id === activeLessonId;
+            return (
+              <li
+                key={lesson.id}
+                className={`lesson-list-item${!isUnlocked ? ' locked' : ''}${lesson.completed ? ' completed' : ''}${isActive ? ' selected' : ''}`}
+                onClick={() => isUnlocked && onLessonClick(lesson.id)}
+              >
+                <span className="lesson-item-title">{lesson.title}</span>
+              </li>
+            );
+          })}
+        </ol>
+      )}
     </div>
   );
 };
@@ -43,7 +41,9 @@ function CourseOverview() {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [userRankLevel, setUserRankLevel] = useState(1); // Сохраняем, если нужно для логики доступа
+  const [userRankLevel, setUserRankLevel] = useState(1);
+  const [expandedSections, setExpandedSections] = useState({});
+  const [activeLessonId, setActiveLessonId] = useState(null);
 
   // Настройка Telegram BackButton
   useEffect(() => {
@@ -101,9 +101,28 @@ function CourseOverview() {
     fetchCourseData();
   }, [courseId]);
 
+  // Открываем первую секцию по умолчанию после загрузки курса
+  useEffect(() => {
+    if (course?.sections) {
+      const initial = {};
+      course.sections.forEach((section, idx) => {
+        initial[section.id] = idx === 0; // первая секция открыта
+      });
+      setExpandedSections(initial);
+    }
+  }, [course]);
+
+  const handleSectionToggle = (sectionId) => {
+    setExpandedSections((prev) => ({ ...prev, [sectionId]: !prev[sectionId] }));
+  };
+
   const handleLessonClick = (lessonId) => {
-    // Переход к странице чтения урока
-    navigate(`/course/${courseId}/lesson/${lessonId}`);
+    setActiveLessonId(lessonId);
+    // Мобильная версия — переход на отдельную страницу
+    if (window.innerWidth < 1024) {
+      navigate(`/course/${courseId}/lesson/${lessonId}`);
+    }
+    // Десктоп — просто выделяем урок, содержимое будет справа
   };
 
   if (loading) {
@@ -141,30 +160,59 @@ function CourseOverview() {
   const progressPercentage = course.progress || 0;
 
   return (
-    <div className="course-overview-container">
+    <div className={`course-overview-container${window.innerWidth >= 1024 ? ' course-layout-container' : ''}`}>
       {/* Заголовок курса */}
       <div className="course-overview-header">
         <h1 className="course-overview-title">{course.title}</h1>
-        {/* Прогресс-бар */}
         <div className="course-overview-progress-bar">
-          <div 
-            className="course-overview-progress-fill" 
+          <div
+            className="course-overview-progress-fill"
             style={{ width: `${progressPercentage}%` }}
           ></div>
         </div>
       </div>
 
-      {/* Список уроков, объединенный из всех секций */}
-      <div className="course-overview-content-list">
-        {course.sections?.map((section) => (
-          <CourseSection
-            key={section.id}
-            section={section}
-            onLessonClick={handleLessonClick}
-            userRankLevel={userRankLevel} // Передаем, если нужно для логики доступа
-          />
-        ))}
-      </div>
+      {/* Двухколоночный макет для десктопа */}
+      {window.innerWidth >= 1024 ? (
+        <div className="course-layout-container">
+          <div className="lesson-sidebar">
+            <div className="course-sections-list-wrapper">
+              {course.sections?.map((section) => (
+                <CourseSection
+                  key={section.id}
+                  section={section}
+                  expanded={!!expandedSections[section.id]}
+                  onToggle={() => handleSectionToggle(section.id)}
+                  onLessonClick={handleLessonClick}
+                  activeLessonId={activeLessonId}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="lesson-content-area">
+            {activeLessonId ? (
+              // Здесь будет компонент для отображения содержимого урока (можно внедрить LessonReader как компонент)
+              <div className="lesson-placeholder">Контент урока (реализовать интеграцию)</div>
+            ) : (
+              <div className="lesson-placeholder">Выберите урок слева</div>
+            )}
+          </div>
+        </div>
+      ) : (
+        // Мобильная версия — только список секций и уроков
+        <div className="course-overview-content-list">
+          {course.sections?.map((section) => (
+            <CourseSection
+              key={section.id}
+              section={section}
+              expanded={!!expandedSections[section.id]}
+              onToggle={() => handleSectionToggle(section.id)}
+              onLessonClick={handleLessonClick}
+              activeLessonId={activeLessonId}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Информация о доступе - можно сохранить, если она нужна */}
       {/* <div className="access-info">
