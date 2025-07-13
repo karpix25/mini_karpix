@@ -1,11 +1,14 @@
 // src/App.js
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
 import './App.css'; 
 import Profile from './Profile';
 import Content from './Content';
-import CourseOverview from './CourseOverview'; // Наш главный компонент для этой задачи
+
+// Новые компоненты для нашей архитектуры
+import CourseLayout from './CourseLayout';
+import CourseLessonList from './CourseLessonList';
+import CourseLessonContent from './CourseLessonContent';
 
 function App() {
   return (
@@ -16,21 +19,19 @@ function App() {
             <Route path="/" element={<Profile />} />
             <Route path="/content" element={<Content />} />
             
-            {/* Этот маршрут ведет на страницу курса, где отображается сайдбар + контент */}
-            <Route path="/course/:courseId" element={<CourseOverview />} />
-            <Route path="/course/:courseId/lesson/:lessonId" element={<CourseOverview />} />
-
-            {/* <Route path="/article/:articleId" element={<ArticleReader />} /> */}
+            {/* Вот правильная структура для курсов */}
+            <Route path="/course/:courseId" element={<CourseLayout />}>
+              {/* index-маршрут: что показывать по-умолчанию */}
+              <Route index element={<CourseLessonList />} /> 
+              {/* Маршрут для конкретного урока */}
+              <Route path="lesson/:lessonId" element={<CourseLessonContent />} />
+            </Route>
+            
           </Routes>
         </div>
         
         <nav className="nav-tabs">
-            <NavLink to="/" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
-                Профиль
-            </NavLink>
-            <NavLink to="/content" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
-                Контент
-            </NavLink>
+          {/* ... ваша навигация ... */}
         </nav>
       </div>
     </Router>
