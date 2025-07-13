@@ -1,416 +1,113 @@
-/* ===== ОСНОВНОЙ КОНТЕЙНЕР ===== */
-.course-overview-container {
-  background-color: var(--tg-theme-bg-color, #FFFFFF); 
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  padding: 0; 
-  color: var(--tg-theme-text-color, #1A1A1A); 
-  min-height: calc(100vh - var(--tg-theme-header-height, 56px) - var(--tg-theme-footer-height, 56px)); 
+/* src/CourseOverview.css */
+
+/* :root переменные (должны быть в App.css или index.css)
+:root {
+    --skool-bg: #F8F7F5; --skool-sidebar-bg: #FFFFFF; --skool-active-bg: #FEFBF2;
+    --skool-active-text: #C29541; --skool-progress-bar-bg: #EAE8E4;
+    --skool-progress-bar-fill: #1A1A1A; --skool-border-color: #EAE8E4;
+    --skool-text-color: #1A1A1A; --skool-text-secondary: #74726F; --skool-icon-color: #B4B2AF;
+}
+*/
+
+.course-view-container {
+  display: flex;
+  background-color: var(--skool-bg);
 }
 
-/* ===== ЗАГОЛОВОК КУРСА И ПРОГРЕСС-БАР (ПРОСТОЙ ВЕРХНИЙ ХЕДЕР) ===== */
-.course-simple-header {
-  background: var(--tg-theme-bg-color, #FFFFFF); 
-  padding: 20px; 
-  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); 
-  text-align: left; 
-}
-
-.course-simple-title {
-  margin: 0 0 16px 0; 
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--tg-theme-text-color, #1A1A1A); 
-  line-height: 1.3;
-}
-
-/* Стили для нового прогресс-бара */
-.course-simple-progress-bar {
-  height: 28px; 
-  background-color: var(--tg-theme-secondary-bg-color, #E9ECEF); 
-  border-radius: 14px; 
-  overflow: hidden;
-  position: relative; 
-  display: flex; 
-  align-items: center; 
-}
-
-.course-simple-progress-fill {
-  height: 100%;
-  background: var(--tg-theme-link-color, #007BFF); 
-  border-radius: 14px; 
-  transition: width 0.3s ease;
-  position: absolute; 
-  left: 0;
+/* --- САЙДБАР --- */
+.course-sidebar {
+  width: 320px;
+  background: var(--skool-sidebar-bg);
+  border-right: 1px solid var(--skool-border-color);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
   top: 0;
-  z-index: 1; 
+  flex-shrink: 0;
 }
 
-.progress-percentage-text {
-  position: relative; 
-  z-index: 2; 
-  font-size: 14px; 
+.sidebar-header {
+  padding: 24px;
+}
+.course-name {
+  margin: 0; font-size: 16px; font-weight: 600; color: var(--skool-text-color);
+}
+.sidebar-progress-wrapper {
+  padding: 0 24px 24px 24px;
+  border-bottom: 1px solid var(--skool-border-color);
+}
+.sidebar-progress-bar {
+  height: 24px; background-color: var(--skool-progress-bar-bg);
+  border-radius: 12px; overflow: hidden;
+}
+.sidebar-progress-fill {
+  height: 100%; background-color: var(--skool-progress-bar-fill);
+  color: white; font-size: 12px; font-weight: 500;
+  display: flex; align-items: center; justify-content: flex-end;
+  padding-right: 8px; transition: width 0.5s ease;
+}
+.sidebar-content {
+  flex: 1; overflow-y: auto; padding: 8px;
+}
+.sidebar-section-header { padding: 10px; }
+.section-title {
+  font-size: 14px; font-weight: 600; text-transform: uppercase;
+  color: var(--skool-text-secondary); margin: 0;
+}
+.sidebar-lessons-list { list-style: none; padding: 0; margin: 0; }
+.sidebar-lesson {
+  padding: 10px 12px; font-size: 15px; color: var(--skool-text-color);
+  border-radius: 6px; margin: 4px 0; font-weight: 500;
+  cursor: pointer; transition: background-color 0.2s ease;
+}
+.sidebar-lesson:hover { background-color: var(--skool-bg); }
+.sidebar-lesson.active {
+  background-color: var(--skool-active-bg);
+  color: var(--skool-active-text);
   font-weight: 600;
-  color: var(--tg-theme-text-color, #1A1A1A); 
-  margin-left: 14px; 
 }
 
-
-/* ===== СПИСОК СЕКЦИЙ/УРОКОВ ===== */
-.course-sections-list-wrapper {
-  /* УБИРАЕМ padding отсюда, чтобы он не мешал выравниванию */
-  padding: 0; 
+/* --- ОСНОВНОЙ КОНТЕНТ --- */
+.course-main-content {
+  flex: 1; min-width: 0;
 }
-
-/* Обертка для каждой секции (без фона) */
-.course-section-group {
-    /* Нет фонов или границ, это просто контейнер для заголовка и списка уроков */
+.lesson-content-wrapper {
+  max-width: 800px; margin: 0 auto; padding: 32px;
 }
-
-/* Заголовок секции с возможностью переключения */
-.course-section-header {
-    display: flex;
-    justify-content: flex-start; /* Выравнивание по левому краю */
-    align-items: center;
-    padding: 20px 20px; /* НОВОЕ: padding для хедера секции, включая боковые отступы */
-    cursor: pointer;
-    border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); /* Разделитель */
-    transition: background-color 0.2s ease;
-    text-align: left; 
+.lesson-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;
 }
-.course-section-header:hover {
-    background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); /* Легкий ховер */
+.lesson-title { font-size: 24px; font-weight: 600; color: var(--skool-text-color); margin: 0; }
+.lesson-video-wrapper {
+  position: relative; padding-bottom: 56.25%; height: 0;
+  border-radius: 12px; margin-bottom: 32px; overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
-
-.section-info { 
-    flex-grow: 1; 
-    margin-left: 10px; /* Отступ текста от стрелки/иконки */
+.lesson-video-wrapper iframe {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
 }
+.lesson-markdown-content { color: var(--skool-text-color); line-height: 1.7; font-size: 16px; }
+.lesson-placeholder { text-align: center; padding-top: 100px; color: var(--skool-text-secondary); }
 
-.course-section-title-text {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--tg-theme-text-color, #1A1A1A);
-    margin: 0; 
-}
+/* --- АДАПТИВНОСТЬ (ваша логика) --- */
+.mobile-navigation { display: none; }
+.sidebar-overlay { display: none; }
 
-/* Стилизация новой иконки переключения */
-.toggle-icon-wrapper {
-    flex-shrink: 0;
-    width: 24px; 
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s ease;
-    /* margin-right: 10px; - уже установлено, если нужно */
-}
-
-.toggle-icon {
-    width: 16px; 
-    height: 16px;
-    stroke: var(--tg-theme-hint-color, #6C757D); 
-    stroke-width: 2; 
-}
-
-.toggle-icon-wrapper.expanded .toggle-icon {
-    transform: rotate(180deg); 
-}
-
-/* Стиль для списка уроков внутри секции */
-.section-lessons-list { 
-  list-style: none; /* Убираем дефолтные маркеры */
-  padding-left: 0; /* Убираем дефолтный padding OL */
-  margin: 0;
-}
-
-/* Стили для отдельных элементов списка уроков */
-.lesson-list-item { 
-  padding: 12px 20px; /* НОВОЕ: padding для элемента списка, включая боковые отступы */
-  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #E9ECEF); /* Тонкий разделитель */
-  font-size: 16px;
-  color: var(--tg-theme-text-color, #1A1A1A); 
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  display: flex; /* Для выравнивания номера и текста */
-  align-items: baseline; /* Выравнивание по базовой линии текста */
-  text-align: left; 
-}
-
-.lesson-list-item:last-child {
-  border-bottom: none; 
-}
-
-.lesson-list-item:hover {
-  background-color: var(--tg-theme-secondary-bg-color, #F8F9FA); /* Адаптивный ховер */
-}
-
-.lesson-list-item.completed {
-  color: var(--tg-theme-hint-color, #6C757D); 
-}
-
-.lesson-list-item.locked {
-  opacity: 0.6;
-  cursor: not-allowed;
-  color: var(--tg-theme-hint-color, #6C757D); 
-}
-
-.lesson-item-number {
-    flex-shrink: 0; 
-    width: 30px; 
-    text-align: left; /* Выравнивание номера по левому краю */
-    margin-right: 10px; /* Отступ от заголовка */
-    font-weight: 600; 
-    color: var(--tg-theme-text-color, #1A1A1A); 
-}
-
-.lesson-item-title {
-  flex-grow: 1; 
-}
-
-/* ===== ОБЩИЕ СОСТОЯНИЯ ЗАГРУЗКИ И ОШИБКИ ===== */
-.common-loading-error-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    text-align: center;
-    background-color: var(--tg-theme-bg-color, #FFFFFF); 
-    color: var(--tg-theme-text-color, #1A1A1A);
-}
-
-.common-loading-error-state .loading-spinner { 
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--tg-theme-secondary-bg-color, #E9ECEF);
-    border-top: 3px solid var(--tg-theme-link-color, #007BFF);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 16px;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.common-loading-error-state p {
-    margin: 0;
-    font-size: 16px;
-    color: var(--tg-theme-hint-color, #6C757D);
-}
-
-.common-loading-error-state h2 { 
-  margin: 0 0 16px 0;
-  font-size: 20px;
-  color: var(--tg-theme-text-color, #1A1A1A);
-}
-
-.common-loading-error-state .back-button { 
-  background: var(--tg-theme-button-color, #007bff);
-  color: var(--tg-theme-button-text-color, #ffffff);
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
-}
-
-.common-loading-error-state .back-button:hover {
-  opacity: 0.9;
-}
-
-
-/* ===== АДАПТИВНОСТЬ ===== */
-@media (max-width: 768px) {
-  .course-simple-title {
-    font-size: 20px;
+@media (max-width: 1024px) {
+  .course-sidebar {
+    position: fixed; left: -320px; z-index: 1000; transition: left 0.3s ease;
   }
-  .lesson-list-item {
-    font-size: 15px;
-    padding: 10px 0; /* padding тут будет перекрыт общим padding */
+  .course-sidebar.open { left: 0; }
+  .sidebar-overlay {
+    display: block; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.4); z-index: 999;
   }
-  .course-sections-list-wrapper {
-    padding: 0; /* НОВОЕ: убираем padding и на мобильных */
+  .mobile-navigation {
+    display: flex; align-items: center; padding: 12px 16px;
+    border-bottom: 1px solid var(--skool-border-color);
+    background-color: var(--skool-sidebar-bg); gap: 16px;
   }
-  .course-section-header {
-    padding: 16px 16px; /* НОВОЕ: уменьшаем padding на мобильных */
-  }
-  .lesson-list-item {
-    padding: 10px 16px; /* НОВОЕ: уменьшаем padding на мобильных */
-  }
-  .lesson-item-number {
-    width: 25px; 
-    margin-right: 8px;
-  }
-}
-
-/* Анимация slideDown для раскрывающихся секций */
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    max-height: 0;
-    overflow: hidden;
-  }
-  to {
-    opacity: 1;
-    max-height: 1000px; 
-    overflow: visible;
-  }
-}
-.section-lessons-list {
-    animation: slideDown 0.3s ease-out;
-}
-
-/* ===== СТИЛИ ДЛЯ ДВУХКОЛОНОЧНОГО МАКЕТА (ДЕСКТОП) ===== */
-
-/* По умолчанию (мобильная версия), контейнер - это просто блок */
-.course-layout-container {
-  /* Ничего не меняем, он будет вести себя как обычный div */
-}
-
-/* На мобильных устройствах правая колонка с контентом урока скрыта */
-.lesson-content-area {
-  display: none;
-}
-
-/* Медиа-запрос, который сработает на экранах шире 1024px */
-@media (min-width: 1024px) {
-  /* Превращаем наш контейнер в сетку из двух колонок */
-  .course-layout-container {
-    display: grid;
-    /* Левая колонка 380px, правая занимает все остальное место */
-    grid-template-columns: 380px 1fr; 
-    height: 100vh; /* Растягиваем на всю высоту окна */
-    overflow: hidden; /* Убираем двойной скролл страницы */
-  }
-
-  /* Стилизуем левую колонку (сайдбар) */
-  .lesson-sidebar {
-    border-right: 1px solid var(--tg-theme-secondary-bg-color);
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-  }
-  
-  /* Заголовок курса в сайдбаре остается на месте */
-  .course-simple-header {
-    flex-shrink: 0; /* Не сжиматься */
-  }
-
-  /* А список уроков растягивается и получает свой собственный скролл */
-  .course-sections-list-wrapper {
-    overflow-y: auto;
-    flex-grow: 1;
-  }
-
-  /* Делаем правую колонку видимой на десктопе */
-  .lesson-content-area {
-    display: block;
-    height: 100vh;
-    overflow-y: auto; /* Свой скролл для контента урока */
-    padding: 24px 48px;
-  }
-  
-  /* Стиль для подсветки выбранного урока в списке слева */
-  .lesson-list-item.selected {
-    background-color: var(--tg-theme-secondary-bg-color);
-    border-radius: 8px;
-  }
-  
-  /* Стили для заглушки, когда урок не выбран */
-  .lesson-placeholder {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    color: var(--tg-theme-hint-color);
-    text-align: center;
-    font-size: 18px;
-  }
-
-  /* Стили для lesson-reader-container, когда он в правой колонке */
-  .lesson-reader-container .lesson-title {
-     font-size: 32px;
-     margin-bottom: 24px;
-  }
-}
-
-/* ===== СТИЛИ ДЛЯ ДВУХКОЛОНОЧНОГО МАКЕТА (ДЕСКТОП) ===== */
-
-/* Изначально правая колонка скрыта (для мобильных) */
-.lesson-content-area {
-  display: none;
-}
-
-/* Медиа-запрос, который сработает на экранах шире 1024px */
-@media (min-width: 1024px) {
-  /* 1. Превращаем контейнер в сетку из двух колонок */
-  .course-layout-container {
-    display: grid;
-    /* Левая колонка 380px, правая занимает все остальное место */
-    grid-template-columns: 380px 1fr; 
-    height: 100vh; /* Растягиваем на всю высоту окна */
-    overflow: hidden; /* Убираем двойной скролл страницы */
-  }
-
-  /* 2. Стилизуем левую колонку (сайдбар), чтобы она была статичной */
-  .lesson-sidebar {
-    border-right: 1px solid var(--tg-theme-secondary-bg-color);
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-  }
-  
-  .course-simple-header {
-    flex-shrink: 0; /* Заголовок не должен сжиматься */
-  }
-
-  /* 3. Список уроков растягивается и получает свой собственный скролл */
-  .course-sections-list-wrapper {
-    overflow-y: auto; /* Вертикальный скролл */
-    flex-grow: 1; /* Занять все доступное место */
-  }
-
-  /* 4. Делаем правую колонку видимой и добавляем ей свой скролл */
-  .lesson-content-area {
-    display: block;
-    height: 100vh;
-    overflow-y: auto; /* Свой скролл для контента урока */
-    padding: 24px 48px;
-  }
-  
-  /* 5. Стиль для подсветки выбранного урока в списке слева */
-  .lesson-list-item.selected {
-    background-color: var(--tg-theme-secondary-bg-color);
-    font-weight: 700;
-    border-radius: 8px;
-    margin: 4px 8px; /* Добавляем отступы для красоты */
-    padding: 12px 12px;
-  }
-  
-  /* 6. Стили для заглушки, когда урок не выбран */
-  .lesson-placeholder {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    color: var(--tg-theme-hint-color);
-    text-align: center;
-    font-size: 18px;
-  }
-
-  /* Доп. стили для заголовка и контента в правой колонке */
-  .lesson-reader-container .lesson-title {
-     font-size: 32px;
-     margin-bottom: 24px;
-  }
-
-  .lesson-reader-container .markdown-content {
-      line-height: 1.7;
-      font-size: 16px;
-  }
+  .sidebar-toggle { background: none; border: none; font-size: 24px; cursor: pointer; }
+  .mobile-course-title { font-weight: 600; }
 }
